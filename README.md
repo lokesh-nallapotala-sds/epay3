@@ -221,7 +221,7 @@ sequenceDiagram
 
 ```bash
 # Clone the repository
-git clone https://github.com/<YOUR-ORGANIZATION>/epay3.git
+git clone https://github.com/lokesh-nallapotala-sds/epay3.git
 cd epay3
 
 # Restore backend dependencies
@@ -230,6 +230,7 @@ dotnet restore Epay3Net.sln
 # Restore frontend dependencies
 cd Epay3Client
 npm install
+npm install @stripe/stripe-js
 cd ..
 ```
 
@@ -256,6 +257,24 @@ Create or update your local environment variables with the required values:
 | `SALESFORCE_CLIENT_SECRET` | Connected App Client Secret | Yes | — |
 
 ### 3. Running Locally
+
+#### Initial Setup & Build Steps
+
+Before launching the application for the first time, trust the local ASP.NET Core developer certificate, build the solution, and install the client dependencies:
+
+```powershell
+# 1. Trust the local HTTPS developer certificate
+dotnet dev-certs https --trust
+
+# 2. Build the backend solution
+dotnet build
+
+# 3. Install frontend dependencies & Stripe SDK
+cd Epay3Client
+npm install
+npm install @stripe/stripe-js
+cd ..
+```
 
 #### Unified Mode (Backend + SPA dev proxy)
 
