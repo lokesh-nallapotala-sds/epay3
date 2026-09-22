@@ -1,0 +1,164 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Payment Confirmation</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f2f4f7;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f2f4f7">
+        <tr>
+            <td align="center" style="padding:40px 16px;">
+
+                <!-- Email Card -->
+                <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                       style="max-width:600px; background-color:#ffffff; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.05);">
+
+                    <!-- Header -->
+                    <tr>
+                        <td style="padding:32px 32px 16px 32px; font-family:Inter, Arial, Helvetica, sans-serif;">
+                            <h1 style="margin:0; font-size:22px; font-weight:600; color:#0f172a;">
+                                Payment Confirmation
+                            </h1>
+                        </td>
+                    </tr>
+
+                    <!-- Intro -->
+                    <tr>
+                        <td style="padding:0 32px 24px 32px; font-family:Inter, Arial, Helvetica, sans-serif; font-size:14px; line-height:1.6; color:#334155;">
+                            <p style="margin:0 0 16px 0;">
+                                Hi [[first_name]],
+                            </p>
+
+                            <p style="margin:0;">
+                                Thank you for your payment. Below are the details of your recent invoice payment made through ChronarPay.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Divider -->
+                    <tr>
+                        <td style="padding:0 32px;">
+                            <hr style="border:none; border-top:1px solid #e5e7eb;" />
+                        </td>
+                    </tr>
+
+                    <!-- Billing & Payment Info -->
+                    <tr>
+                        <td style="padding:24px 32px; font-family:Inter, Arial, Helvetica, sans-serif; font-size:13px; color:#334155;">
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                <tr valign="top">
+
+                                    <!-- Billing -->
+                                    <td width="50%" style="padding-right:16px;">
+                                        <p style="margin:0 0 8px 0; font-weight:600; color:#0f172a;">
+                                            Billing Information
+                                        </p>
+                                        <p style="margin:0; color:#475569;">
+                                            Customer ID: [[customer_number]]<br />
+                                            [[company_name]]<br />
+                                            [[address_line]]<br />
+                                            [[address_city]]<br />
+                                            [[address_country]]<br />
+                                            [[address_postal_code]]
+                                        </p>
+                                    </td>
+
+                                    <!-- Payment -->
+                                    <td width="50%" style="padding-left:16px;">
+                                        <p style="margin:0 0 8px 0; font-weight:600; color:#0f172a;">
+                                            Payment Details
+                                        </p>
+                                        <p style="margin:0; color:#475569;">
+                                            Payment Method: [[payment_method]]<br />
+                                            Card Type: [[card_type]]<br />
+                                            Payment Date: [[payment_date]]
+                                        </p>
+                                    </td>
+
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Divider -->
+                    <tr>
+                        <td style="padding:0 32px;">
+                            <hr style="border:none; border-top:1px solid #e5e7eb;" />
+                        </td>
+                    </tr>
+
+                    <!-- Invoice Table -->
+                    <tr>
+                        <td style="padding:24px 32px; font-family:Inter, Arial, Helvetica, sans-serif;">
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                                   style="border-collapse:collapse; margin:0;">
+                                <thead>
+                                    <tr>
+                                        <th align="left" style="padding:8px; font-size:13px; border-bottom:1px solid #e5e7eb;">
+                                            Invoice No
+                                        </th>
+                                        <th align="left" style="padding:8px; font-size:13px; border-bottom:1px solid #e5e7eb;">
+                                            Invoice Date
+                                        </th>
+                                        <th align="right" style="padding:8px; font-size:13px; border-bottom:1px solid #e5e7eb;">
+                                            Amount
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+
+                                    <tr>
+                                        <td style="padding:8px; font-size:13px; color:#475569;">
+                                            [[payment_number]]
+                                        </td>
+                                        <td style="padding:8px; font-size:13px; color:#475569;">
+                                            [[document_date]]
+                                        </td>
+                                        <td align="right" style="padding:8px; font-size:13px; color:#475569;">
+                                            [[payment_currency]] [[payment_amount]]
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td colspan="2" style="padding:12px 8px; font-size:13px; font-weight:600; border-top:1px solid #e5e7eb;">
+                                            Total Paid
+                                        </td>
+                                        <td align="right" style="padding:12px 8px; font-size:13px; font-weight:600; border-top:1px solid #e5e7eb;">
+                                            [[payment_currency]] [[payment_total]]
+                                        </td>
+                                    </tr>
+
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Footer Divider -->
+                    <tr>
+                        <td style="padding:0 32px;">
+                            <hr style="border:none; border-top:1px solid #e5e7eb;" />
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding:16px 32px 32px 32px; font-family:Inter, Arial, Helvetica, sans-serif; font-size:12px; color:#6b7280; text-align:center;">
+                            <p style="margin:0 0 8px 0;">
+                                <a href="[[site.contact_us_url]]" style="color:#4f5dff; text-decoration:none;">
+                                    Contact Us
+                                </a>
+                            </p>
+                            <p style="margin:0;">
+                                <a href="[[site.terms_conditions_url]]" style="color:#4f5dff; text-decoration:none;">
+                                    Terms &amp; Conditions
+                                </a>
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

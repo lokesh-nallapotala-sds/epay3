@@ -1,0 +1,64 @@
+/* Plain, statically-imported stylesheet (bundled as a <link>, not an injected <style> tag) so
+   it needs no CSP nonce handling — unlike a WYSIWYG library that injects <style> at runtime. */
+
+.help-text-editor .ProseMirror {
+  min-height: 200px;
+  /* Caps growth for long help text so the field scrolls internally instead of
+     pushing the whole Configuration page taller than the viewport (the same
+     class of issue fixed for the invoice table's height calculation). */
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 10px 12px;
+  outline: none;
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.help-text-editor .ProseMirror p {
+  margin: 0 0 0.5em;
+}
+
+/* Same proportions the slide-out panel renders them at (HelpPanel.tsx), so
+   the authored preview matches what end users see. */
+.help-text-editor .ProseMirror h1,
+.help-text-editor .ProseMirror h2 {
+  font-weight: 600;
+  margin: 0.75em 0 0.35em;
+}
+
+.help-text-editor .ProseMirror h1 {
+  font-size: 1.25em;
+}
+
+.help-text-editor .ProseMirror h2 {
+  font-size: 1.125em;
+}
+
+.help-text-editor .ProseMirror h1:first-child,
+.help-text-editor .ProseMirror h2:first-child {
+  margin-top: 0;
+}
+
+.help-text-editor .ProseMirror p:last-child {
+  margin-bottom: 0;
+}
+
+.help-text-editor .ProseMirror ul,
+.help-text-editor .ProseMirror ol {
+  margin: 0 0 0.5em;
+  padding-left: 1.5em;
+}
+
+.help-text-editor .ProseMirror a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.help-text-editor .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: #9aa1ac;
+  float: left;
+  height: 0;
+  pointer-events: none;
+}

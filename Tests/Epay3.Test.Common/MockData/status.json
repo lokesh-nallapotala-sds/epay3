@@ -1,0 +1,14 @@
+{
+    "Data": {
+        "message_type": "S",
+        "message_identification": "TestId",
+        "message_number": 123,
+        "message_line_string": "Operation successful"
+    },
+    "Status": {
+      "MessageType": "S",
+      "Identifiaction": "/CNBS/X_API",
+      "Number": 10,
+      "Line": "Request successfully processed"
+    }
+}

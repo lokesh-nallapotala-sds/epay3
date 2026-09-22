@@ -1,0 +1,3 @@
+cd Epay3Client || exit 1
+npx prettier --check "src/**/*.{ts,js,tsx}"
+npm test

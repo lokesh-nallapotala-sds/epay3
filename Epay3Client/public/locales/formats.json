@@ -1,0 +1,70 @@
+[
+  {
+    "country": "us",
+    "numberFormat": "999,999,999,999.99",
+    "dateFormat": "MM/dd/yyyy",
+    "weekStart": 0,
+    "weeekend": [6, 0],
+    "language": {
+      "shortweek": ["S", "M", "T", "W", "T", "F", "S"],
+      "week": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+      "longweek": [
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ],
+      "month": [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December"
+      ]
+    }
+  },
+  {
+    "country": "ca",
+    "numberFormat": "999,999,999,999.99",
+    "dateFormat": "yyyy-MM-dd",
+    "weekStart": 0,
+    "weeekend": [6, 0],
+    "language": {
+      "shortweek": ["S", "M", "T", "W", "T", "F", "S"],
+      "week": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+      "longweek": [
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ],
+      "month": [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December"
+      ]
+    }
+  }
+]

@@ -1,0 +1,30 @@
+{
+    "Admin": [
+        "CanImpersonate",
+        "CanViewUsers",
+        "CanManageUsers",
+        "CanEditSystemConfig",
+        "CanMakePayment",
+        "CanManagePaymentMethods",
+        "IsAdmin",
+        "ManageLinkedSAPAccounts"
+    ],
+    "Manager": [
+        "CanImpersonate",
+        "CanViewUsers",
+        "CanManageUsers",
+        "CanMakePayment",
+        "ManageLinkedSAPAccounts",
+        "CanManageRegistrationRequests"
+    ],
+    "Internal": [
+        "CanImpersonate",
+        "CanViewUsers",
+        "CanManageOwnSAPAccounts"
+    ],
+    "User": [
+        "CanMakePayment",
+        "CanManagePaymentMethods"
+    ],
+    "Default": []
+}

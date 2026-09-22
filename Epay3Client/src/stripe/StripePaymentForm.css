@@ -1,0 +1,214 @@
+/*
+ * StripePaymentForm.css
+ *
+ * Styles for the Stripe Payment Element form component.
+ * Uses CSS custom properties to integrate with the app's design system.
+ */
+
+/* ─── Container ─────────────────────────────────────────────────────────────── */
+
+.spf-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  max-width: 520px;
+  width: 100%;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────────────── */
+
+.spf-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.spf-label {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.spf-amount {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+/* ─── Loading Skeleton ───────────────────────────────────────────────────────── */
+
+.spf-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.spf-skeleton {
+  height: 44px;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  border-radius: 8px;
+  animation: spf-shimmer 1.5s infinite;
+}
+
+.spf-skeleton--short {
+  height: 20px;
+  width: 60%;
+}
+
+@keyframes spf-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+/* ─── Stripe Payment Element ─────────────────────────────────────────────────── */
+
+.spf-element {
+  min-height: 0;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  /* Stripe mounts its iframe here */
+}
+
+.spf-element--visible {
+  opacity: 1;
+  min-height: 120px;
+}
+
+/* ─── Error ──────────────────────────────────────────────────────────────────── */
+
+.spf-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: #b91c1c;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.spf-error-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ─── Success ─────────────────────────────────────────────────────────────────── */
+
+.spf-success {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: #15803d;
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.spf-success-icon {
+  font-size: 1.125rem;
+}
+
+/* ─── Pay Button ─────────────────────────────────────────────────────────────── */
+
+.spf-pay-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.875rem 1.5rem;
+  background: #0176d3;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+  box-shadow: 0 2px 8px rgba(1, 118, 211, 0.35);
+}
+
+.spf-pay-button:hover:not(:disabled) {
+  background: #0165b8;
+  box-shadow: 0 4px 14px rgba(1, 118, 211, 0.45);
+}
+
+.spf-pay-button:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.spf-pay-button:disabled {
+  background: #94a3b8;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.spf-pay-button--processing {
+  background: #0165b8;
+  cursor: wait;
+}
+
+/* ─── Spinner ─────────────────────────────────────────────────────────────────── */
+
+.spf-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spf-spin 0.65s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spf-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Security Note ──────────────────────────────────────────────────────────── */
+
+.spf-security-note {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #64748b;
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* ─── Responsive ─────────────────────────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  .spf-container {
+    padding: 1.25rem;
+    border-radius: 8px;
+  }
+
+  .spf-amount {
+    font-size: 1.25rem;
+  }
+
+  .spf-pay-button {
+    padding: 0.75rem 1rem;
+    font-size: 0.9375rem;
+  }
+}

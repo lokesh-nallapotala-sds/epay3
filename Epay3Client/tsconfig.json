@@ -1,0 +1,60 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Linting */
+    "strict": true,
+    "noImplicitAny": false, //TODO: change back to true
+    "noUnusedLocals": false, //TODO: change back to true
+    "noUnusedParameters": false, //TODO: change back to true
+    "noFallthroughCasesInSwitch": true,
+    "paths": {
+      "components": ["./src/components"],
+      "components/*": ["./src/components/*"],
+      "constants": ["./src/constants"],
+      "constants/*": ["./src/constants/*"],
+      "contexts": ["./src/contexts"],
+      "contexts/*": ["./src/contexts/*"],
+      "hooks": ["./src/hooks"],
+      "hooks/*": ["./src/hooks/*"],
+      "providers": ["./src/providers"],
+      "providers/*": ["./src/providers/*"],
+      "redux": ["./src/redux"],
+      "redux/*": ["./src/redux/*"],
+      "routing": ["./src/routing"],
+      "routing/*": ["./src/routing/*"],
+      "services": ["./src/services"],
+      "services/*": ["./src/services/*"],
+      "shared": ["./src/shared"],
+      "shared/*": ["./src/shared/*"],
+      "types": ["./src/types"],
+      "types/*": ["./src/types/*"],
+      "utilities": ["./src/utilities"],
+      "utilities/*": ["./src/utilities/*"]
+    }
+  },
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    "docs",
+    "public",
+  ],
+}

@@ -1,0 +1,37 @@
+{
+    "CreateUser_Valid": {
+        "login": "newuser",
+        "email": "new@test.com",
+        "first_name": "First",
+        "last_name": "Last",
+        "company": "Company",
+        "status": "active",
+        "primary_account_type_id": "Payer",
+        "user_role": "user",
+        "Password": "Password1!"
+    },
+    "UpdateUser_Valid": {
+        "user_id": "123",
+        "login": "updateduser",
+        "email": "updated@test.com",
+        "first_name": "First",
+        "last_name": "Last",
+        "company": "Company",
+        "status": "active",
+        "primary_account_type_id": "Payer",
+        "user_role": "user"
+    },
+    "ChangePassword_Valid": {
+        "CurrentPassword": "old",
+        "NewPassword": "Password1!",
+        "NewPasswordConfirmation": "Password1!"
+    },
+    "PasswordResetRequest_Valid": {
+        "Email": "test@test.com"
+    },
+    "CompletePasswordReset_Valid": {
+        "Id": "token",
+        "Password": "Password1!",
+        "ConfirmPassword": "Password1!"
+    }
+}

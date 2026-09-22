@@ -1,0 +1,359 @@
+/**
+ * PayMetric Hosted Page CSS - Credit Card
+ * Optimized for standalone hosted payment page
+ */
+
+/* Import Inter font to match React app */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* Reset and base styles */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden;
+}
+
+body {
+    font-family:
+        'Inter',
+        -apple-system,
+        BlinkMacSystemFont,
+        'Segoe UI',
+        Roboto,
+        'Helvetica Neue',
+        Arial,
+        sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    color: rgba(0, 0, 0, 0.87);
+    background-color: transparent;
+    padding: 24px;
+    display: flex;
+    justify-content: center;
+}
+
+/* Hide Paymetric generated form titles (e.g. "Add Credit Card") */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+legend,
+.title,
+.page-title,
+.form-title,
+#title,
+.PaymentDetailHeader {
+    display: none !important;
+}
+
+/* Form container */
+.epay-iframe-form,
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100% !important;
+    max-width: 500px;
+    /* Centered compact form */
+    margin: 0 auto;
+}
+
+/* Field row */
+.field-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+}
+
+/* Split field row for expiry + CVV */
+.field-row-split {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    width: 100%;
+}
+
+.field-row-split>* {
+    flex: 1;
+}
+
+/* Labels - match fieldHeader variant (14px, 500 weight, #808897) */
+label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #808897;
+    line-height: 21px;
+    margin-bottom: 4px;
+    margin-top: 8px;
+    display: block;
+}
+
+/* Remove top margin from the very first label in the form */
+form>*:first-child label,
+form>label:first-child {
+    margin-top: 0;
+}
+
+label.required::after {
+    content: ' *';
+    color: #ff0b1e;
+}
+
+/* Input fields - MUI OutlinedInput style */
+input,
+select {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 48px;
+    padding: 0 16px;
+    font-size: 16px;
+    font-weight: 500;
+    font-family: inherit;
+    color: #0D0D12;
+    background-color: #fff;
+    border: 1px solid #DFE1E6;
+    border-radius: 10px;
+    outline: none;
+    transition:
+        border-color 0.2s ease-in-out,
+        box-shadow 0.2s ease-in-out;
+}
+
+input:hover,
+select:hover {
+    border-color: var(--p-bh, #808897);
+}
+
+input:focus,
+select:focus {
+    border-color: var(--p-p, #1B75BB);
+    border-width: 2px;
+    padding: 0 15px;
+    /* Adjust padding to compensate for 2px border */
+    box-shadow: none;
+}
+
+input::placeholder {
+    color: #A4ABB8;
+    opacity: 1;
+}
+
+input:disabled,
+select:disabled {
+    background-color: rgba(0, 0, 0, 0.04);
+    color: rgba(0, 0, 0, 0.38);
+    border-color: rgba(0, 0, 0, 0.12);
+    cursor: not-allowed;
+}
+
+/* Error state */
+input.error,
+select.error,
+input:invalid,
+select:invalid,
+input[class*='error'],
+select[class*='error'] {
+    border-color: #ff0b1e;
+}
+
+input.error:focus,
+select.error:focus,
+input:invalid:focus,
+select:invalid:focus {
+    border-color: #ff0b1e;
+}
+
+/* Error messages - broad selectors to catch PayMetric's error classes */
+.error-msg,
+.validation-error,
+.error,
+.Error,
+.invalid,
+.validation,
+[class*='error']:not(input):not(select),
+[class*='Error']:not(input):not(select),
+[class*='invalid']:not(input):not(select),
+[class*='validation']:not(input):not(select),
+input+span,
+input+div,
+select+span,
+select+div {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 12px !important;
+    color: #ff0b1e !important;
+    margin-top: 4px !important;
+    line-height: 1.33 !important;
+    font-weight: 400 !important;
+    letter-spacing: 0.03333em !important;
+}
+
+/* Select dropdown styling */
+select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath fill='rgba(0,0,0,0.54)' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    padding-right: 32px;
+    cursor: pointer;
+}
+
+/* Gap between adjacent select elements (e.g., expiry month + year) */
+select+select {
+    margin-top: 12px;
+}
+
+/* Fallback if selects are wrapped in individual divs */
+div:has(> select)+div:has(> select) {
+    margin-top: 12px;
+}
+
+/* Card type images container */
+.card-types {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.card-types img {
+    height: 24px;
+    width: auto;
+    opacity: 0.5;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.card-types img.active {
+    opacity: 1;
+}
+
+/* Prevent dynamic shrinking - PayMetric iframe sizing fix */
+div,
+span,
+fieldset,
+table,
+tr,
+td,
+th {
+    width: 100%;
+    min-width: 0;
+    flex-shrink: 0;
+}
+
+/* Button Container & One-line buttons */
+.button-row,
+.button-container,
+.buttons,
+.ActionRow,
+div:has(> input[type="submit"]),
+div:has(> input[type="button"]),
+div:has(> button) {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    gap: 12px !important;
+    width: 100% !important;
+    margin-top: 24px !important;
+    margin-bottom: 24px !important;
+}
+
+/* Primary Button (Submit/Save) */
+input[type="submit"],
+button[type="submit"],
+.btn-primary,
+.ButtonPrimary,
+#btnSubmit {
+    background-color: var(--p-p, #1B75BB) !important;
+    color: var(--p-t, #FFFFFF) !important;
+    border: 1px solid var(--p-p, #1B75BB) !important;
+    font-weight: 600 !important;
+}
+
+/* Secondary Button (Cancel) */
+input[type="button"],
+button:not([type="submit"]),
+.btn-secondary,
+.btn-default,
+.ButtonSecondary,
+#btnCancel,
+input[value*="cancel" i],
+input[name*="cancel" i] {
+    background-color: #FFFFFF !important;
+    color: var(--p-s, #0D0D12) !important;
+    border: 1px solid rgba(13, 13, 18, 0.5) !important;
+    font-weight: 600 !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+input[type="submit"]:hover,
+button[type="submit"]:hover,
+.btn-primary:hover {
+    background-color: var(--p-h, #175788) !important;
+    border-color: var(--p-h, #175788) !important;
+}
+
+input[type="button"]:hover,
+button:not([type="submit"]):hover,
+.btn-secondary:hover,
+input[value*="cancel" i]:hover {
+    border-color: var(--p-s, #0D0D12) !important;
+    background-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+input[type="button"]:focus,
+button:not([type="submit"]):focus,
+.btn-secondary:focus,
+.btn-default:focus,
+.ButtonSecondary:focus,
+#btnCancel:focus,
+input[value*="cancel" i]:focus,
+input[name*="cancel" i]:focus {
+    border-color: rgba(13, 13, 18, 0.5) !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+input[type="submit"],
+input[type="button"],
+button,
+.btn-primary,
+.btn-secondary {
+    width: auto !important;
+    min-width: 140px !important;
+    flex: 1 !important;
+    height: 48px !important;
+    border-radius: 12px !important;
+    cursor: pointer !important;
+    font-family: inherit !important;
+    font-size: 16px !important;
+    text-transform: capitalize !important;
+    padding: 0 24px !important;
+    transition: all 0.2s ease-in-out !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+    body {
+        padding: 16px;
+    }
+
+    .field-row-split {
+        flex-direction: column;
+    }
+
+    input,
+    select {
+        font-size: 16px;
+        /* Prevents zoom on iOS */
+    }
+}

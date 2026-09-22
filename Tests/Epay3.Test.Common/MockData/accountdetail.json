@@ -1,0 +1,55 @@
+{
+    "data": {
+        "address_data": {
+            "name": "Test Company",
+            "name_2": "Headquarters",
+            "city": "Test City",
+            "street": "123 Test St",
+            "postal_code_city": "12345",
+            "region": "TS",
+            "country": "US"
+        },
+        "soldto_list": [
+            {
+                "customer_number": "1001",
+                "sales_area_data": {
+                    "sales_organization": "3000",
+                    "distribution_channel": "10",
+                    "division": "00",
+                    "company_code": "3000"
+                },
+                "address_data": {
+                    "name": "SoldTo Name",
+                    "city": "SoldTo City"
+                }
+            }
+        ],
+        "sales_data": [
+            {
+                "data": {
+                    "sales_organization": "3000",
+                    "distribution_channel": "10",
+                    "division": "00",
+                    "company_code": "3000"
+                },
+                "partner": [
+                    {
+                        "partner_function": "RG",
+                        "partner_number": "9508",
+                        "default_partner": "X",
+                        "address_data": {
+                            "name": "Partner Name"
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "status": {
+        "json": "",
+        "message_identification": "/CNBS/X_API",
+        "message_line_string": "Success",
+        "message_number": 0,
+        "message_type": "S"
+    }
+}

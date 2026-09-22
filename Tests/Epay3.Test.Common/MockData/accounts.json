@@ -1,0 +1,122 @@
+[
+    {
+        "account_id": "85NYFce9H53F51x35cc73XMj5H3cw4",
+        "user_id": "000C29F0318A1EDFAC969B7AF90ECB83",
+        "primary_account": "9508",
+        "account_type": "both",
+        "sales_organization": "3000",
+        "distribution_channel": "10",
+        "division": "00",
+        "company_code": "3000",
+        "allow_payments": true,
+        "allow_deposits": true,
+        "address": {
+            "name": "Best Buy #4433",
+            "name2": null,
+            "name3": null,
+            "name4": null,
+            "city": "Washington",
+            "district": null,
+            "street": "700 13th St NW",
+            "postalCodeCity": "20005",
+            "region": "DC",
+            "country": "US"
+        }
+    },
+    {
+        "account_id": "Uh7D0rR9ZnrDhx2Gf5GfCeyTv7N5u8",
+        "user_id": "000C29F0318A1EDFAC969B7AF90ECB83",
+        "primary_account": "9503",
+        "account_type": "both",
+        "sales_organization": "3000",
+        "distribution_channel": "10",
+        "division": "00",
+        "company_code": "3000",
+        "allow_payments": true,
+        "allow_deposits": true,
+        "address": {
+            "name": "NGK",
+            "name2": null,
+            "name3": null,
+            "name4": null,
+            "city": "Cincinnati",
+            "district": null,
+            "street": null,
+            "postalCodeCity": null,
+            "region": "OH",
+            "country": "US"
+        }
+    },
+    {
+        "account_id": "Xc4xM5i19dcjl57Wr8wftZ1qITyuS6",
+        "user_id": "000C29F0318A1EDFAC969B7AF90ECB83",
+        "primary_account": "4000",
+        "account_type": "both",
+        "sales_organization": "3000",
+        "distribution_channel": "10",
+        "division": "00",
+        "company_code": "3000",
+        "allow_payments": true,
+        "allow_deposits": true,
+        "address": {
+            "name": "North Energy Ltd",
+            "name2": null,
+            "name3": null,
+            "name4": null,
+            "city": "Calgary",
+            "district": null,
+            "street": "#200 N. Road",
+            "postalCodeCity": "T2P 4K9",
+            "region": "AB",
+            "country": "CA"
+        }
+    },
+    {
+        "account_id": "gTg001OeUs97w6SSO02ub9t6EUuf70",
+        "user_id": "000C29F0318A1EDFAC969B7AF90ECB83",
+        "primary_account": "300711",
+        "account_type": "both",
+        "sales_organization": "3000",
+        "distribution_channel": "10",
+        "division": "00",
+        "company_code": "3000",
+        "allow_payments": true,
+        "allow_deposits": true,
+        "address": {
+            "name": "Holden & Associates",
+            "name2": null,
+            "name3": null,
+            "name4": null,
+            "city": "SAN ANTONIO",
+            "district": "BEXAR",
+            "street": "LOOP 410 S.W.",
+            "postalCodeCity": "78245",
+            "region": "TX",
+            "country": "US"
+        }
+    },
+    {
+        "account_id": "gjqihQvptOpus474yS6OOdC790qNlI",
+        "user_id": "000C29F0318A1EDFAC969B7AF90ECB83",
+        "primary_account": "10452",
+        "account_type": "both",
+        "sales_organization": "3000",
+        "distribution_channel": "10",
+        "division": "00",
+        "company_code": "3000",
+        "allow_payments": true,
+        "allow_deposits": true,
+        "address": {
+            "name": "Rutherford Group",
+            "name2": null,
+            "name3": null,
+            "name4": null,
+            "city": "Inman",
+            "district": null,
+            "street": "1745 Milred Drive",
+            "postalCodeCity": "29349",
+            "region": "SC",
+            "country": "US"
+        }
+    }
+]
