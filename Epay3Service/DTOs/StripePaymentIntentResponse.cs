@@ -34,15 +34,15 @@ public class StripePaymentIntentResponse
     public string? Status { get; set; }
 
     /// <summary>
-    /// Amount in Stripe's smallest currency unit (e.g. cents for USD).
-    /// Example: 25000 = $250.00 USD.
+    /// Amount returned by payment gateway. Supports both decimal amounts (e.g. 15.0)
+    /// and integer cents.
     /// </summary>
-    public int? Amount { get; set; }
+    public decimal? Amount { get; set; }
 
     /// <summary>
     /// Amount that has been received (captured). 0 before payment confirmation.
     /// </summary>
-    public int? AmountReceived { get; set; }
+    public decimal? AmountReceived { get; set; }
 
     /// <summary>
     /// Lowercase ISO currency code. Example: "usd".

@@ -50,7 +50,7 @@ public class AuthController(
     {
         try
         {
-            request.UserName = request?.UserName?.ToLowerInvariant() ?? "";
+            request.UserName = request?.UserName?.Trim().ToLowerInvariant() ?? "";
             var language = lang ?? CultureInfo.CurrentCulture.Name;
 
             if (string.IsNullOrEmpty(request?.UserName) || string.IsNullOrEmpty(request.Password))

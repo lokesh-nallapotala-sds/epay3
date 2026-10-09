@@ -2,19 +2,11 @@ import { useEffect, useMemo, useState, MouseEvent } from 'react';
 import { useIntl } from 'react-intl';
 import Ability from 'types/Ability';
 import { Box, useTheme } from '@mui/system';
-import { EditNoteTwoTone } from '@mui/icons-material';
 import { useEpayToast } from 'providers/EpayToastProvider';
 import EpayAccordion from 'shared/components/EpayAccordion';
-import {
-  compactFilterMenuItemSx,
-  compactFilterSelectProps,
-} from 'shared/components/compactFilterSelectStyles';
-import { getCompactFilterFieldSx } from 'shared/components/compactFilterFieldStyles';
-import { useAutoFlipSelect } from 'shared/components/useAutoFlipSelect';
 import { useAppDispatch, useAppSelector } from 'redux/hooks';
 import { PaymentCard, PaymentMethod, PaymentParameters } from 'types/Payment';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import { Button, Grid, MenuItem, TextField, Typography } from '@mui/material';
+import { Grid } from '@mui/material';
 import {
   clearCurrentPaymentMethodSelection,
   enrichPaymentMethodTypeFields,
@@ -41,6 +33,7 @@ import {
 import AddressValidation from './AddressValidation';
 import AddressZipValidation from './AddressZipValidation';
 import { ManagePaymentMethods } from './ManagePaymentMethods';
+import ChronarpayPaymentMethodBox from './ChronarpayPaymentMethodBox';
 import PaymentTotalsSummary from './PaymentTotalsSummary';
 import {
   selectAddressValidationOptions,
@@ -136,7 +129,14 @@ export default function Payments({
       Boolean(
         paymentCard?.token?.startsWith('pm_') ||
         paymentCard?.token?.startsWith('tok_') ||
-        paymentCard?.key?.startsWith('pm_')
+        paymentCard?.token?.startsWith('btok_') ||
+        paymentCard?.token?.startsWith('ba_') ||
+        paymentCard?.key?.startsWith('pm_') ||
+        paymentCard?.key?.startsWith('tok_') ||
+        paymentCard?.key?.startsWith('btok_') ||
+        paymentCard?.key?.startsWith('ba_') ||
+        (paymentCard as any)?.isSession ||
+        (paymentCard as any)?.isStripe
       ),
     [paymentCard]
   );
@@ -280,6 +280,27 @@ export default function Payments({
   }, [data, isDeposit]);
 
   useEffect(() => {
+    const isCurrentStripe = Boolean(
+      paymentCard?.token?.startsWith('pm_') ||
+      paymentCard?.token?.startsWith('tok_') ||
+      paymentCard?.token?.startsWith('btok_') ||
+      paymentCard?.token?.startsWith('ba_') ||
+      paymentCard?.key?.startsWith('pm_') ||
+      paymentCard?.key?.startsWith('tok_') ||
+      paymentCard?.key?.startsWith('btok_') ||
+      paymentCard?.key?.startsWith('ba_') ||
+      (paymentCard as any)?.isSession ||
+      (paymentCard as any)?.isStripe
+    );
+    if (isCurrentStripe) {
+      dispatch(
+        setPaymentMethodIsCreditCard(
+          paymentCard?.cardType !== PaymentTypes.EC,
+        ),
+      );
+      return;
+    }
+
     if (!paymentMethodsList?.length) {
       if (!arePaymentMethodDetailsEqual(paymentCard, defaultPaymentMethod)) {
         setPaymentCard(defaultPaymentMethod);
@@ -420,84 +441,31 @@ export default function Payments({
     setpaymentNote(max === 0 ? ' ' : f(noteKey).replace('{amount}', formatted));
   }, [paymentCard, config, currencyKey, f]);
 
-  const handlePaymentCardChange = (e) => {
-    if (e.target.value === defaultPaymentMethod.token) {
-      setPaymentCard(defaultPaymentMethod);
-      setCVV('');
-      setPaymentMethodType?.('');
-      clearCurrentPaymentMethodSelection();
-      return;
-    }
-
+  const handleSelectPaymentCard = (card: PaymentMethod) => {
     setStartPay(false);
-
-    const card = paymentMethodsList?.find(
-      (card) => card.token === e.target.value,
-    );
-
-    if (card) {
-      rememberCurrentPaymentMethodSelection(card, payer, accountIdentity);
-      setPaymentCard(card);
-      setPaymentMethodType?.(card.cardType);
-    }
-
+    rememberCurrentPaymentMethodSelection(card, payer, accountIdentity);
+    setPaymentCard({
+      ...card,
+      isSession: true,
+    });
+    setPaymentMethodType?.(card.cardType || '');
     dispatch(setPaymentMethodIsEditable(false));
   };
 
   useEffect(() => {
-    const filtered = companyCodeDetail?.isEcheckEnabled
-      ? methods
-      : methods.filter((card) => card.cardType !== PaymentTypes.EC);
+    setPaymentMethodsList(methods || []);
+  }, [methods]);
 
-    setPaymentMethodsList(filtered);
-  }, [methods, companyCodeDetail?.isEcheckEnabled]);
-
-  const selectedDropdownMethod = findMatchingPaymentMethod(
-    paymentCard,
-    paymentMethodsList,
-  );
-  const renderedPaymentMethodsList = paymentMethodsList.filter(
-    (option, index, list) =>
-      list.findIndex(
-        (candidate) =>
-          getPaymentMethodDisplaySignature(candidate) ===
-          getPaymentMethodDisplaySignature(option),
-      ) === index,
-  );
-  const selectedDropdownValue =
-    selectedDropdownMethod?.token || defaultPaymentMethod.token;
-  const selectedDropdownLabel =
-    selectedDropdownMethod?.dropDownDisplayName ||
-    defaultPaymentMethod.dropDownDisplayName;
-  const paymentMethodOptionsCount = 1 + renderedPaymentMethodsList.length;
-  const { fieldRef: paymentMethodFieldRef, resolvedSelectProps } =
-    useAutoFlipSelect({
-      optionCount: paymentMethodOptionsCount,
-      selectProps: {
-        IconComponent: KeyboardArrowDownIcon,
-        renderValue: () => selectedDropdownLabel,
-        MenuProps: {
-          MenuListProps: compactFilterSelectProps.MenuProps.MenuListProps,
-        },
-        sx: {
-          '.MuiSelect-select': {
-            display: 'inline-flex',
-            alignItems: 'center',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            maxWidth: '100%',
-          },
-          '.MuiTypography-root': {
-            display: 'inline-block',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            maxWidth: '100%',
-          },
-        },
-      },
-    });
+  const renderedPaymentMethodsList = useMemo(() => {
+    return paymentMethodsList.filter(
+      (option, index, list) =>
+        list.findIndex(
+          (candidate) =>
+            getPaymentMethodDisplaySignature(candidate) ===
+            getPaymentMethodDisplaySignature(option),
+        ) === index,
+    );
+  }, [paymentMethodsList]);
 
   useEffect(() => {
     if (payTotal != 0) {
@@ -607,178 +575,54 @@ export default function Payments({
           title={f('payment.method')}
           sectionType="Payment"
           sectionIsComplete={paymentMethodIsComplete}
-          isExpanded={paymentMethodIsExpanded}
+          isExpanded={true}
           isEditable={
             paymentMethodIsEditable &&
-            (isStripeCard ||
-              addressValidationIsEditable ||
+            (addressValidationIsEditable ||
               addressValidationOptions?.toLowerCase() ===
                 ADDRESS_VALIDATION_OFF ||
               !paymentMethodIsCreditCard)
           }
           editIsSelected={handleEditAddressValidation}
         >
-          <Box id="payment-content">
-            <Box mb="0.5rem">
-              <Typography variant="fieldHeader"></Typography>
-            </Box>
-
-            <Box mb="1.3rem">
-              <TextField
-                ref={paymentMethodFieldRef}
-                select
-                fullWidth
-                value={selectedDropdownValue}
-                onChange={handlePaymentCardChange}
-                sx={getCompactFilterFieldSx}
-                SelectProps={resolvedSelectProps}
-              >
-                <MenuItem
-                  key={defaultPaymentMethod.token}
-                  value={defaultPaymentMethod.token}
-                  sx={compactFilterMenuItemSx}
-                >
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      lineHeight: '1.5rem',
-                      verticalAlign: 'middle',
-                    }}
-                  >
-                    {defaultPaymentMethod.dropDownDisplayName}
-                  </Typography>
-                </MenuItem>
-                {renderedPaymentMethodsList.length != 0 &&
-                  renderedPaymentMethodsList.map((option) => (
-                    <MenuItem
-                      key={option.token}
-                      value={option.token}
-                      sx={compactFilterMenuItemSx}
-                    >
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          lineHeight: '1.5rem',
-                          verticalAlign: 'middle',
-                        }}
-                      >
-                        {option.dropDownDisplayName}
-                      </Typography>
-                    </MenuItem>
-                  ))}
-              </TextField>
-            </Box>
-            {paymentCard?.cardType && (
-              <Box
-                mb="1rem"
-                sx={{
-                  color: theme.palette.error.main,
-                  minHeight: paymentNote?.trim() == '' ? '1px' : 'auto',
-                }}
-              >
-                <Typography
-                  variant="fieldHeader"
-                  display={paymentCard?.cardType === '' ? 'none' : 'block'}
-                >
-                  {paymentNote}
-                </Typography>
-              </Box>
-            )}
-            {isCVVAllowed && (
-              <Box
-                mb="1.3rem"
-                display={
-                  paymentCard?.cardType === PaymentTypes.EC ||
-                  paymentCard?.cardType === ''
-                    ? 'none'
-                    : 'block'
-                }
-              >
-                <Box mb="0.5rem">
-                  <Typography variant="fieldHeader">
-                    {f('payment_methods.cvv')}
-                  </Typography>
-                </Box>
-
-                <Box>
-                  <TextField
-                    fullWidth
-                    required
-                    value={cvv}
-                    error={isCvvError}
-                    helperText={cvvError}
-                    sx={getCompactFilterFieldSx}
-                    placeholder={
-                      paymentCard?.cardType?.toLowerCase() === 'amex'
-                        ? 'XXXX'
-                        : 'XXX'
-                    }
-                    onChange={handleCvvChange}
-                    onBlur={handleCvvErrorCheck}
-                  />
-                </Box>
-              </Box>
-            )}
-            {canManagePaymentMethods && (
-              <Grid>
-                <Grid
-                  id="manage-payments-link"
-                  container
-                  alignItems="center"
-                  spacing={0.75}
-                  onClick={toggleShowManagePayments}
-                  mb="1.3rem"
-                  sx={{
-                    cursor: 'pointer',
-                    color: theme.palette.interactiveColor,
-                  }}
-                >
-                  <Grid item>
-                    <EditNoteTwoTone />
-                  </Grid>
-                  <Grid item>
-                    <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                      {f('payment.method.manage')}
-                    </Typography>
-                  </Grid>
-                </Grid>
-
-                {showManagePayments && (
-                  <Box>
-                    <ManagePaymentMethods
-                      cards={cards}
-                      allowEchecks={companyCodeDetail?.isEcheckEnabled}
-                      isAutoPayFlagEnabled={isAutoPayEnabled}
-                      isAutoPayEnrolled={payerDetails?.isAutoPayEnrolled}
-                      onSuccess={handlePaymentMethodAdded}
-                    ></ManagePaymentMethods>
-                  </Box>
-                )}
-              </Grid>
-            )}
-            {!startPay && (
-              <Grid item container justifyContent="flex-end">
-                <Grid item justifyContent="flex-end">
-                  <Button
-                    variant="contained"
-                    sx={{
-                      border: `1px solid ${theme.palette.buttonBorder.buttonBorderColor}`,
-                      '&:hover': {
-                        border: `1px solid ${theme.palette.buttonBorder.buttonBorderHoverColor}`,
-                      },
-                    }}
-                    onClick={continueClick}
-                  >
-                    {f('user.register.continue')}
-                  </Button>
-                </Grid>
-              </Grid>
-            )}
-          </Box>
+          <ChronarpayPaymentMethodBox
+            selectedCard={paymentCard}
+            onSelectCard={handleSelectPaymentCard}
+            existingMethods={renderedPaymentMethodsList}
+            payer={payer}
+            accountId={
+              selectedAccount?.accountId ||
+              selectedAccount?.primaryAcct ||
+              payerDetails?.customerNumber ||
+              payer ||
+              ''
+            }
+            accountName={selectedAccount?.address?.name || ''}
+            userEmail={user?.email || ''}
+            cvv={cvv}
+            onCvvChange={handleCvvChange}
+            onCvvBlur={handleCvvErrorCheck}
+            isCvvError={isCvvError}
+            cvvError={cvvError}
+            isCVVAllowed={isCVVAllowed}
+            canManagePaymentMethods={canManagePaymentMethods}
+            showManagePayments={showManagePayments}
+            onToggleShowManagePayments={toggleShowManagePayments}
+            cards={cards}
+            allowEchecks={true}
+            isAutoPayEnabled={isAutoPayEnabled}
+            isAutoPayEnrolled={payerDetails?.isAutoPayEnrolled}
+            onPaymentMethodAdded={handlePaymentMethodAdded}
+            startPay={startPay}
+            onContinue={continueClick}
+            onPay={handlePayment}
+            isProcessing={isProcessing}
+            amountToPay={amountToPay}
+            paymentNote={paymentNote}
+          />
         </EpayAccordion>
       </Grid>
       {enablePreAuth &&
-        !isStripeCard &&
         addressValidationOptions?.toLowerCase() === ADDRESS_VALIDATION_ZIP &&
         paymentMethodIsCreditCard && (
           <AddressZipValidation
@@ -789,7 +633,6 @@ export default function Payments({
         )}
 
       {enablePreAuth &&
-        !isStripeCard &&
         addressValidationOptions?.toLowerCase() !== ADDRESS_VALIDATION_OFF &&
         addressValidationOptions?.toLowerCase() !== ADDRESS_VALIDATION_ZIP &&
         paymentMethodIsCreditCard && (

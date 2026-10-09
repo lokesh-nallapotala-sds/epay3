@@ -1,0 +1,204 @@
+.stripe-add-check-container {
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  background: #ffffff;
+  border-radius: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.stripe-add-check-header {
+  margin-bottom: 20px;
+}
+
+.stripe-add-check-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a1f36;
+  margin: 0 0 6px 0;
+}
+
+.stripe-add-check-subtitle {
+  font-size: 0.875rem;
+  color: #697386;
+  margin: 0;
+}
+
+.stripe-field-group {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.stripe-field-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.stripe-field-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.stripe-field-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #3c4257;
+  margin-bottom: 6px;
+}
+
+.stripe-text-input,
+.stripe-select-input {
+  height: 42px;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #1a1f36;
+  background-color: #ffffff;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+  font-family: inherit;
+  width: 100%;
+}
+
+.stripe-text-input:focus,
+.stripe-select-input:focus {
+  border-color: #6b11ff;
+  box-shadow: 0 0 0 3px rgba(107, 17, 255, 0.15);
+}
+
+.stripe-checkbox-label {
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem;
+  color: #3c4257;
+  cursor: pointer;
+  margin-top: 4px;
+  margin-bottom: 14px;
+  user-select: none;
+}
+
+.stripe-checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin-right: 10px;
+  accent-color: #6b11ff;
+  cursor: pointer;
+}
+
+.stripe-nacha-notice {
+  font-size: 0.75rem;
+  color: #64748b;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 18px;
+  line-height: 1.4;
+}
+
+.stripe-error-message {
+  padding: 10px 14px;
+  background-color: #fff1f2;
+  border: 1px solid #fecdd3;
+  border-radius: 6px;
+  color: #be123c;
+  font-size: 0.875rem;
+  margin-bottom: 16px;
+}
+
+.stripe-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.stripe-btn-cancel {
+  padding: 10px 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #4b5563;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.stripe-btn-cancel:hover {
+  background: #f9fafb;
+}
+
+.stripe-btn-submit {
+  padding: 10px 22px;
+  border: none;
+  border-radius: 6px;
+  background: #6b11ff;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.15s ease;
+}
+
+.stripe-btn-submit:hover:not(:disabled) {
+  background: #5600e8;
+}
+
+.stripe-btn-submit:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.stripe-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: stripe-spin 0.8s linear infinite;
+}
+
+@keyframes stripe-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.stripe-test-helper {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: #334155;
+}
+
+.stripe-btn-fill-test {
+  background: #6b11ff;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.stripe-btn-fill-test:hover {
+  background: #5600e8;
+}

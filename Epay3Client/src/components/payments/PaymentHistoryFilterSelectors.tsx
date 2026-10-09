@@ -36,6 +36,7 @@ interface Props {
   invoiceList: PaymentHistoryRow[];
   dateFilterRef?: Ref<HTMLDivElement>;
   dateFilterActive?: boolean;
+  onSearch?: () => void;
 }
 
 const PaymentHistoryFilterSelectors = ({
@@ -62,6 +63,7 @@ const PaymentHistoryFilterSelectors = ({
   invoiceList,
   dateFilterRef,
   dateFilterActive,
+  onSearch,
 }: Props) => {
   const isLastDaysPeriod =
     selectedPeriod === DateRangeOption.Last7Days ||
@@ -183,6 +185,11 @@ const PaymentHistoryFilterSelectors = ({
                   sx={getCompactFilterFieldSx}
                   value={invoiceNumber}
                   onChange={onInvoiceValueChange}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      onSearch?.();
+                    }
+                  }}
                 />
               </Grid>
             </Grid>

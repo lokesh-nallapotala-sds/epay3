@@ -168,7 +168,14 @@ export function useScheduledPaymentExecution({
     const isStripeCard = Boolean(
       paymentMethod?.token?.startsWith('pm_') ||
       paymentMethod?.token?.startsWith('tok_') ||
-      paymentMethod?.key?.startsWith('pm_')
+      paymentMethod?.token?.startsWith('btok_') ||
+      paymentMethod?.token?.startsWith('ba_') ||
+      paymentMethod?.key?.startsWith('pm_') ||
+      paymentMethod?.key?.startsWith('tok_') ||
+      paymentMethod?.key?.startsWith('btok_') ||
+      paymentMethod?.key?.startsWith('ba_') ||
+      (paymentMethod as any)?.isSession ||
+      (paymentMethod as any)?.isStripe
     );
     if (!shouldPreAuthenticate || isStripeCard) {
       return true;
@@ -307,7 +314,14 @@ export function useScheduledPaymentExecution({
     const isStripeCard = Boolean(
       paymentMethod?.token?.startsWith('pm_') ||
       paymentMethod?.token?.startsWith('tok_') ||
-      paymentMethod?.key?.startsWith('pm_')
+      paymentMethod?.token?.startsWith('btok_') ||
+      paymentMethod?.token?.startsWith('ba_') ||
+      paymentMethod?.key?.startsWith('pm_') ||
+      paymentMethod?.key?.startsWith('tok_') ||
+      paymentMethod?.key?.startsWith('btok_') ||
+      paymentMethod?.key?.startsWith('ba_') ||
+      (paymentMethod as any)?.isSession ||
+      (paymentMethod as any)?.isStripe
     );
 
     if (isStripeCard) {

@@ -67,19 +67,51 @@ public class StripeController(IStripeManager stripeManager) : ControllerBase
     }
 
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // POST api/stripe/payment-intent
-    // ─────────────────────────────────────────────────────────────────────────
+    /// <summary>
+    /// Processes a Stripe payment via Salesforce middleware using Worldpay API structure.
+    ///
+    /// Access: Public / Session checkout allowed.
+    /// </summary>
+    [HttpPost("payment")]
+    [HttpPost("pay")]
+    [AllowAnonymous]
+    [EnableRateLimiting(RateLimitPolicyNames.AuthenticatedApi)]
+    public async Task<IActionResult> ProcessPayment(
+        [FromBody] StripePaymentIntentRequest request,
+        CancellationToken ct)
+    {
+        if (request is null)
+        {
+            return BadRequest(new { error = "Request body is required." });
+        }
+
+        if (request.Amount <= 0)
+        {
+            return BadRequest(new { error = "Payment amount must be greater than zero." });
+        }
+
+        try
+        {
+            StripePaymentIntentResponse result =
+                await _stripeManager.ProcessPaymentAsync(request, ct);
+
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = ex.Message, details = ex.InnerException?.Message });
+        }
+    }
 
     /// <summary>
     /// Creates a Stripe PaymentIntent via Salesforce middleware.
     ///
     /// Request body must contain amount, currency, and invoice information.
-    /// It must NOT contain card numbers, CVV, or expiry dates.
-    ///
-    /// The response contains a <c>clientSecret</c> that the browser MUST pass
-    /// to Stripe.js to complete the payment:
-    ///   stripe.confirmPayment({ elements, clientSecret, redirect: 'if_required' })
+    /// It must NOT contain raw card numbers, CVV, or expiry dates.
     ///
     /// Access: Requires authentication. Rate-limited.
     /// </summary>
@@ -102,8 +134,16 @@ public class StripeController(IStripeManager stripeManager) : ControllerBase
 
         try
         {
-            StripePaymentIntentResponse result =
-                await _stripeManager.CreatePaymentIntentAsync(request, ct);
+            // If payment method is specified and confirmed, route through ProcessPaymentAsync
+            StripePaymentIntentResponse result;
+            if (!string.IsNullOrWhiteSpace(request.PaymentMethodId ?? request.Token) && request.Confirm)
+            {
+                result = await _stripeManager.ProcessPaymentAsync(request, ct);
+            }
+            else
+            {
+                result = await _stripeManager.CreatePaymentIntentAsync(request, ct);
+            }
 
             return Ok(result);
         }
@@ -113,7 +153,7 @@ public class StripeController(IStripeManager stripeManager) : ControllerBase
         }
         catch (Exception ex)
         {
-            return new ExceptionResult(ex);
+            return StatusCode(500, new { error = ex.Message, details = ex.InnerException?.Message });
         }
     }
 
@@ -241,6 +281,89 @@ public class StripeController(IStripeManager stripeManager) : ControllerBase
         {
             StripePaymentMethodResponse result =
                 await _stripeManager.CreatePaymentMethodAsync(request, ct);
+
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return new ExceptionResult(ex);
+        }
+    }
+
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // GET api/stripe/charges
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Retrieves Stripe charges (transaction history), optionally filtered by Stripe Customer ID.
+    ///
+    /// Access: Requires authentication.
+    /// </summary>
+    [HttpGet("charges")]
+    [AllowAnonymous]
+    [EnableRateLimiting(RateLimitPolicyNames.AuthenticatedApi)]
+    public async Task<IActionResult> GetCharges(
+        [FromQuery] string? customerId = null,
+        [FromQuery] string? accountId = null,
+        [FromQuery(Name = "created_gte")] long? createdGteSnake = null,
+        [FromQuery(Name = "createdGte")] long? createdGteCamel = null,
+        [FromQuery(Name = "created_lte")] long? createdLteSnake = null,
+        [FromQuery(Name = "createdLte")] long? createdLteCamel = null,
+        [FromQuery] int limit = 50,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            long? createdGte = createdGteSnake ?? createdGteCamel;
+            long? createdLte = createdLteSnake ?? createdLteCamel;
+
+            StripeChargesResponse result =
+                await _stripeManager.GetChargesAsync(customerId, accountId, createdGte, createdLte, limit, ct);
+
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return new ExceptionResult(ex);
+        }
+    }
+
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // GET api/stripe/customer-payment-methods/{accountId}
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Resolves or provisions a Stripe customer for the Salesforce Account ID and returns
+    /// customer details along with saved payment methods.
+    ///
+    /// Access: Public / Session checkout allowed.
+    /// </summary>
+    [HttpGet("customer-payment-methods/{accountId}")]
+    [AllowAnonymous]
+    [EnableRateLimiting(RateLimitPolicyNames.AuthenticatedApi)]
+    public async Task<IActionResult> GetCustomerPaymentMethods(
+        [FromRoute] string accountId,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(accountId))
+        {
+            return BadRequest(new { error = "accountId is required." });
+        }
+
+        try
+        {
+            StripeCustomerCardsResponse result =
+                await _stripeManager.GetCustomerAndPaymentMethodsAsync(accountId, ct);
 
             return Ok(result);
         }

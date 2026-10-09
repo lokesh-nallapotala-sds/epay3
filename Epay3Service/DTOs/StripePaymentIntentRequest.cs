@@ -82,4 +82,27 @@ public class StripePaymentIntentRequest
     /// Defaults to true when PaymentMethodId is provided.
     /// </summary>
     public bool Confirm { get; set; } = true;
+
+    /// <summary>
+    /// Worldpay alias for CustomerName / CardHolderName.
+    /// </summary>
+    public string? CardHolderName
+    {
+        get => this.CustomerName;
+        set => this.CustomerName = string.IsNullOrWhiteSpace(this.CustomerName) ? value : this.CustomerName;
+    }
+
+    /// <summary>
+    /// Worldpay alias for PaymentMethodId / Token.
+    /// </summary>
+    public string? Token
+    {
+        get => this.PaymentMethodId;
+        set => this.PaymentMethodId = string.IsNullOrWhiteSpace(this.PaymentMethodId) ? value : this.PaymentMethodId;
+    }
+
+    public string? CardNumber { get; set; }
+    public string? ExpiryMonth { get; set; }
+    public string? ExpiryYear { get; set; }
+    public string? Cvv { get; set; }
 }

@@ -8,10 +8,10 @@ public class PaymentInvoice
     public string? DocumentNumberFinance { get; set; }
 
     [JsonProperty("line_item_in_the_relevant_invoice")]
-    public long LineItemInTheRelevantInvoice { get; set; }
+    public long? LineItemInTheRelevantInvoice { get; set; }
 
     [JsonProperty("fiscal_year_of_the_relevant_invoice")]
-    public long FiscalYearOfTheRelevantInvoice { get; set; }
+    public long? FiscalYearOfTheRelevantInvoice { get; set; }
 
     [JsonProperty("open_amount")]
     public double OpenAmount { get; set; }

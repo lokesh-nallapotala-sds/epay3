@@ -75,7 +75,7 @@ export const AddCardStripe = ({ onClose, onSuccess }: AddCardStripeProps) => {
 
       // Fallback default test key if config endpoint returns empty
       if (!publishableKey) {
-        publishableKey = 'pk_test_51Ssmw7FjM5kKx07o1tXz8gJqV'; // fallback safe placeholder
+        publishableKey = 'pk_test_51Tl7yORpGYyK4c4urnN0IJgygsC0I3WRauWEFdrirAKocEVvj7TydvOM2EGG3kUCPbwsR2G3XrfUhzyHBBHiZ5sB00RJ4N7iRX';
       }
 
       const stripe = await getStripe(publishableKey);

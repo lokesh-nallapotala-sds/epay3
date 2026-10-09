@@ -6,6 +6,7 @@ import { Stack } from '@mui/material';
 import { useTheme } from '@mui/system';
 import Divider from '@mui/material/Divider';
 import AddCardIcon from '@mui/icons-material/AddCard';
+import SyncIcon from '@mui/icons-material/Sync';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { PaymentCard } from 'types/Payment';
 import { useAllPaymentCardsForPayer } from 'hooks/usePaymentHelpers';
@@ -15,7 +16,7 @@ import { EpayPaymentService } from 'services/EpayPaymentService';
 import { usePayerDetails } from 'providers/PayerDetailsProvider';
 import { formatError } from 'utilities/utilities';
 import { usePaymentMethodAction } from 'hooks/usePaymentMethodAction';
-import { Box, Button, Grid, Typography } from '@mui/material';
+import { Box, Button, CircularProgress, Grid, Typography } from '@mui/material';
 import EpayPageHeaderText from 'shared/components/EpayPageHeaderText';
 import {
   impersonatedUserSelector,
@@ -41,6 +42,7 @@ function ManagePaymentMethodsPage() {
     useState<boolean>(false);
   const [isAutoPayAgreed, setIsAutoPayAgreed] = useState<boolean>(false);
   const [unenrollModalOpen, setUnenrollModalOpen] = useState(false);
+  const [isSyncingCards, setIsSyncingCards] = useState<boolean>(false);
   const selectedAccount = useAppSelector(selectedAccountSelector);
   const unEnrollAutoPay = EpayPaymentService.useUnEnrollAutoPay();
   const impersonatedUser = useAppSelector(impersonatedUserSelector);
@@ -133,6 +135,30 @@ function ManagePaymentMethodsPage() {
     setType('check');
   }
 
+  const handleSyncStripeCards = async () => {
+    setIsSyncingCards(true);
+    try {
+      const targetAccount =
+        selectedAccount?.accountId ||
+        selectedAccount?.primaryAcct ||
+        effectivePayer;
+      if (targetAccount) {
+        await fetch(
+          `/api/stripe/customer-payment-methods/${encodeURIComponent(targetAccount)}`,
+          {
+            credentials: 'include',
+          }
+        );
+      }
+      await refreshPayerDetails(true);
+      showToastMessage('success', 'Stripe payment cards synchronized successfully.');
+    } catch (err: any) {
+      showToastMessage('error', err.message || 'Failed to synchronize payment cards.');
+    } finally {
+      setIsSyncingCards(false);
+    }
+  };
+
   const handleAgreeChange = (e) => {
     setIsAutoPayAgreed(e);
   };
@@ -221,20 +247,42 @@ function ManagePaymentMethodsPage() {
                 />
                 <Stack
                   direction="row"
+                  spacing={2}
                   alignItems="center"
-                  sx={{
-                    cursor: 'pointer',
-                    color: `${theme.palette.interactiveColor}`,
-                    marginLeft: '.58rem !important',
-                    marginTop: '1.75rem !important',
-                  }}
-                  spacing={1}
-                  onClick={addCreditCard}
+                  sx={{ marginTop: '1.75rem !important' }}
                 >
-                  <AddCardIcon />
-                  <Typography variant="body2">
-                    {f('payment_methods.cards.add')}
-                  </Typography>
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    sx={{
+                      cursor: 'pointer',
+                      color: `${theme.palette.interactiveColor}`,
+                      marginLeft: '.58rem !important',
+                    }}
+                    spacing={1}
+                    onClick={addCreditCard}
+                  >
+                    <AddCardIcon />
+                    <Typography variant="body2">
+                      {f('payment_methods.cards.add')}
+                    </Typography>
+                  </Stack>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={handleSyncStripeCards}
+                    disabled={isSyncingCards}
+                    startIcon={
+                      isSyncingCards ? (
+                        <CircularProgress size={16} />
+                      ) : (
+                        <SyncIcon fontSize="small" />
+                      )
+                    }
+                    sx={{ textTransform: 'none', borderRadius: 2 }}
+                  >
+                    Sync Cards
+                  </Button>
                 </Stack>
               </Stack>
             </Grid>

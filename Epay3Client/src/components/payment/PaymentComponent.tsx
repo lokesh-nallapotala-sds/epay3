@@ -99,6 +99,11 @@ export default function PaymentComponent() {
         } as Invoice);
       });
       setInvoices(invoicesData);
+      const initialTotal = invoicesData.reduce(
+        (sum, item) => sum + (Number(item.paymentAmount) || 0),
+        0,
+      );
+      setAmountToPay(initialTotal);
     }
   }, [canMakePayment, data, f]);
 

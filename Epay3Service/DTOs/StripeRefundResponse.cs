@@ -16,10 +16,9 @@ public class StripeRefundResponse
     public string? PaymentIntentId { get; set; }
 
     /// <summary>
-    /// Amount refunded in Stripe's smallest currency unit (e.g. cents for USD).
-    /// Example: 5000 = $50.00 USD.
+    /// Amount refunded. Supports both decimal and integer cents.
     /// </summary>
-    public int? Amount { get; set; }
+    public decimal? Amount { get; set; }
 
     /// <summary>
     /// Lowercase ISO currency code. Example: "usd".

@@ -7,6 +7,7 @@ import { EditCard } from './EditCard';
 import { EditCheck } from './EditCheck';
 import { AddCheckIframe } from './iframe/AddCheckIframe';
 import { AddCheckHosted } from './hosted/AddCheckHosted';
+import { AddCheckStripe } from './stripe/AddCheckStripe';
 import { AddCardStripe } from './stripe/AddCardStripe';
 import { PaymentCard } from 'types/Payment';
 
@@ -69,10 +70,8 @@ export const PaymentMethodModal = ({
         )
       ) : isEditing && card ? (
         <EditCheck card={card} onClose={handleClose} />
-      ) : isHosted ? (
-        <AddCheckHosted onClose={handleClose} />
       ) : (
-        <AddCheckIframe onClose={handleClose} />
+        <AddCheckStripe onClose={handleClose} onSuccess={onSuccess} />
       )}
     </EpayModal>
   );

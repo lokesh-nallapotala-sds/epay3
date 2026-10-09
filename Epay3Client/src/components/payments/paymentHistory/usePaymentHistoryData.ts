@@ -32,6 +32,7 @@ import { useCustomRangeLabel } from 'hooks/useCustomRangeLabel';
 import {
   clone,
   handlePaymentExport,
+  toCurrencyString,
   toFormattedDateString,
 } from 'utilities/utilities';
 
@@ -393,7 +394,285 @@ export function usePaymentHistoryData({
       : selectedAccounts[0];
   };
 
-  const getData = (subAccounts = selectedSubAccounts) => {
+  const fetchStripeCharges = async (
+    targetAccountId?: string,
+    targetCustomerId?: string,
+    createdGte?: number,
+    createdLte?: number,
+  ): Promise<any[]> => {
+    try {
+      let resolvedCustomerId = targetCustomerId;
+
+      // 1. Resolve Stripe Customer ID if accountId is available
+      if (targetAccountId && !resolvedCustomerId) {
+        try {
+          const custRes = await fetch(
+            `/api/stripe/customer-payment-methods/${encodeURIComponent(targetAccountId)}`,
+            { credentials: 'include' },
+          );
+          if (custRes.ok) {
+            const custData = await custRes.json();
+            const cid =
+              custData?.customer?.id ||
+              custData?.customerId ||
+              (typeof custData?.customer === 'string'
+                ? custData.customer
+                : null);
+            if (cid && typeof cid === 'string' && cid.startsWith('cus_')) {
+              resolvedCustomerId = cid;
+            }
+          }
+        } catch (custErr) {
+          console.warn('Could not resolve Stripe customer for account:', custErr);
+        }
+      }
+
+      // 2. Build charges URL
+      let url = '/api/stripe/charges?limit=100';
+      if (resolvedCustomerId && resolvedCustomerId.startsWith('cus_')) {
+        url += `&customerId=${encodeURIComponent(resolvedCustomerId)}`;
+      } else if (targetAccountId) {
+        url += `&accountId=${encodeURIComponent(targetAccountId)}`;
+      }
+      if (createdGte && createdGte > 0) {
+        url += `&createdGte=${createdGte}&created_gte=${createdGte}`;
+      }
+      if (createdLte && createdLte > 0) {
+        url += `&createdLte=${createdLte}&created_lte=${createdLte}`;
+      }
+
+      const res = await fetch(url, { credentials: 'include' });
+      if (res.ok) {
+        const raw = await res.json();
+        const data =
+          raw?.data || raw?.charges?.data || (Array.isArray(raw) ? raw : []);
+        if (Array.isArray(data) && data.length > 0) {
+          return data;
+        }
+      }
+
+      // 3. Fallback: query with date bounds across all charges if account-specific returned empty
+      let fallbackUrl = '/api/stripe/charges?limit=100';
+      if (createdGte && createdGte > 0) {
+        fallbackUrl += `&createdGte=${createdGte}&created_gte=${createdGte}`;
+      }
+      if (createdLte && createdLte > 0) {
+        fallbackUrl += `&createdLte=${createdLte}&created_lte=${createdLte}`;
+      }
+
+      if (url !== fallbackUrl) {
+        const fallbackRes = await fetch(fallbackUrl, {
+          credentials: 'include',
+        });
+        if (fallbackRes.ok) {
+          const fallbackRaw = await fallbackRes.json();
+          const fallbackData =
+            fallbackRaw?.data ||
+            fallbackRaw?.charges?.data ||
+            (Array.isArray(fallbackRaw) ? fallbackRaw : []);
+          if (Array.isArray(fallbackData) && fallbackData.length > 0) {
+            return fallbackData;
+          }
+        }
+      }
+
+      // 4. Secondary fallback: query all charges if date bounds were restrictive
+      if (createdGte || createdLte) {
+        const allRes = await fetch('/api/stripe/charges?limit=100', {
+          credentials: 'include',
+        });
+        if (allRes.ok) {
+          const allRaw = await allRes.json();
+          const allData =
+            allRaw?.data ||
+            allRaw?.charges?.data ||
+            (Array.isArray(allRaw) ? allRaw : []);
+          if (Array.isArray(allData) && allData.length > 0) {
+            return allData;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Error fetching Stripe charges:', err);
+    }
+    return [];
+  };
+
+  const mapStripeChargeToPaymentHistoryRow = (
+    charge: any,
+    fallbackAccount: string,
+  ): PaymentHistoryRow => {
+    const pmd = charge.payment_method_details || charge.paymentMethodDetails;
+    let paymentCardType = 'Card';
+    let cardLast4 = '';
+
+    if (pmd?.card) {
+      const card = pmd.card;
+      paymentCardType = card.brand
+        ? card.brand.charAt(0).toUpperCase() + card.brand.slice(1)
+        : 'Card';
+      cardLast4 = card.last4 || '';
+    } else if (pmd?.us_bank_account || pmd?.usBankAccount) {
+      const bank = pmd.us_bank_account || pmd.usBankAccount;
+      paymentCardType = bank.bank_name || bank.bankName || 'Bank';
+      cardLast4 = bank.last4 || '';
+    } else if (pmd?.type) {
+      paymentCardType = pmd.type.charAt(0).toUpperCase() + pmd.type.slice(1);
+    } else if (charge.source?.brand) {
+      paymentCardType =
+        charge.source.brand.charAt(0).toUpperCase() +
+        charge.source.brand.slice(1);
+      cardLast4 = charge.source.last4 || '';
+    }
+
+    // Extract invoice number
+    let invoiceNum =
+      charge.metadata?.invoiceNumber ||
+      charge.metadata?.invoice_number ||
+      charge.metadata?.invoice ||
+      '';
+
+    if (!invoiceNum && charge.description) {
+      const match = charge.description.match(
+        /(?:invoice|inv|bill)\s*(?:#|no\.?|num\.?)?\s*([A-Za-z0-9_-]+)/i,
+      );
+      if (match && match[1]) {
+        invoiceNum = match[1];
+      } else if (/^\d{5,12}$/.test(charge.description.trim())) {
+        invoiceNum = charge.description.trim();
+      }
+    }
+
+    if (!invoiceNum) {
+      invoiceNum = 'Deposit';
+    }
+
+    // Account number resolution
+    let chargeAcc =
+      charge.metadata?.accountNumber ||
+      charge.metadata?.account_number ||
+      '';
+
+    if (!chargeAcc && charge.metadata?.accountId) {
+      const metaAccId = String(charge.metadata.accountId).trim();
+      if (selectedAccount?.accountId && metaAccId === selectedAccount.accountId) {
+        chargeAcc = selectedAccount.primaryAcct || '';
+      }
+      if (!chargeAcc && relatedAccountsLoaded?.length) {
+        const found = relatedAccountsLoaded.find(
+          (a) =>
+            (a as any).accountId === metaAccId ||
+            a.primaryAccount === metaAccId ||
+            a.primaryAccount.replace(/^0+/, '') === metaAccId.replace(/^0+/, ''),
+        );
+        if (found) chargeAcc = found.primaryAccount;
+      }
+      if (!chargeAcc && !metaAccId.startsWith('001')) {
+        chargeAcc = metaAccId;
+      }
+    }
+
+    if (!chargeAcc) {
+      chargeAcc = fallbackAccount || selectedAccount?.primaryAcct || '';
+    }
+
+    const amountVal = charge.amount != null ? charge.amount / 100 : 0;
+    const currencyKey = (charge.currency || 'USD').toUpperCase();
+    const createdDate = charge.created
+      ? new Date(charge.created * 1000).toISOString()
+      : new Date().toISOString();
+
+    const docNum = 
+      charge.metadata?.invoiceNumber ||
+      charge.metadata?.invoice_number ||
+      charge.metadata?.invoice ||
+      charge.id || '';
+    const refNum =
+      charge.metadata?.invoiceNumber ||
+      charge.metadata?.invoice_number ||
+      charge.metadata?.invoice ||
+      charge.payment_intent ||
+      charge.paymentIntentId ||
+      charge.metadata?.paymentId ||
+      charge.receipt_number ||
+      charge.id ||
+      '';
+
+    const paymentData: paymentList = {
+      documentNumberFinance: docNum,
+      billingDocumentNumber: invoiceNum,
+      financeDocumentType: 'DZ',
+      referenceNumber: refNum,
+      fiscalYearOfTheRelevantInvoice: new Date(createdDate).getFullYear(),
+      payerNumber: chargeAcc,
+      postingDate: createdDate,
+      documentDate: createdDate,
+      currencyKey: currencyKey,
+      paidAmount: amountVal,
+      itemText: charge.description || `Payment for invoice ${invoiceNum}`,
+      authorizationNumber: '',
+      authorizationReferenceCode: refNum,
+      authorizationAmount: amountVal,
+      paymentMethod: paymentCardType,
+      paymentCardType: paymentCardType,
+      paymentCardToken: '',
+      paymentCardName:
+        charge.billing_details?.name || charge.billingDetails?.name || '',
+      validTo: '',
+      cardLast4Digit: cardLast4,
+      appliedCreditAmount: charge.amount_refunded
+        ? charge.amount_refunded / 100
+        : 0,
+      soldtoNumber: Number(chargeAcc) || undefined,
+      sdInvoices:
+        invoiceNum !== 'Deposit'
+          ? [
+              {
+                billingDocumentNumber: invoiceNum,
+                billingDocumentType: 'F2',
+                salesOrganization: '',
+                distributionChannel: '',
+                division: '',
+                referenceNumber: refNum,
+                currencyKey: currencyKey,
+                postingDate: createdDate,
+                documentDate: createdDate,
+                dueDate: createdDate,
+                daysInArrears: 0,
+                totalAmount: amountVal,
+                openAmount: 0,
+                paidAmount: amountVal,
+                pdfDocumentAvailable: 'X',
+                soldtoNumber: chargeAcc,
+                currentPaidAmount: amountVal.toString(),
+              },
+            ]
+          : [],
+    };
+
+    return {
+      documentNumberFinance: docNum,
+      referenceNumber: refNum,
+      billingDocumentNumber: invoiceNum,
+      documentDate: createdDate,
+      paidAmount: toCurrencyString(
+        currencyKey,
+        amountVal,
+        false,
+        regionalFormat,
+      ),
+      paymentCardType: paymentCardType,
+      paymentCardToken: '',
+      soldtoNumber: chargeAcc.replace(/^0+/, ''),
+      currencyKey: currencyKey,
+      paidAmountRaw: amountVal,
+      appliedCreditAmount: paymentData.appliedCreditAmount ?? 0,
+      paymentData: paymentData,
+      CardLast4Digit: cardLast4,
+    };
+  };
+
+  const getData = async (subAccounts = selectedSubAccounts) => {
     const primaryAccountType = impersonatedUser
       ? impersonatedUser.primaryAccountType
       : user?.primaryAccountType;
@@ -406,6 +685,7 @@ export function usePaymentHistoryData({
       primaryAccountType === AccountType.SoldTo && selectedAccount?.primaryAcct
         ? [selectedAccount.primaryAcct]
         : normalizedSelectedAccounts;
+
     const filters: SearchFilter[] = [];
     if (invoiceNumber) {
       filters.push({
@@ -413,121 +693,130 @@ export function usePaymentHistoryData({
         value: invoiceNumber,
       });
     }
-    const request: InvoicesSearchRequest = {
-      documentType: EpayDocumentType.Payment,
-      status: selectedStatus,
-      userId: impersonatedUser ? impersonatedUser.userId : user?.userId,
-      selectedAccount: selectedAccount?.primaryAcct ?? '',
-      companyCode: selectedAccount?.companyCode,
-      subAccounts:
-        primaryAccountType === AccountType.Payer
+
+    const defaultAccountNum = selectedAccount?.primaryAcct || '';
+    const activeAccountNum =
+      normalizedSelectedAccounts.length === 1
+        ? normalizedSelectedAccounts[0]
+        : defaultAccountNum;
+    const targetAccountId =
+      activeAccountNum || selectedAccount?.accountId || undefined;
+
+    // Date range bounds for Stripe query in Unix seconds
+    let createdGte: number | undefined = undefined;
+    let createdLte: number | undefined = undefined;
+
+    if (selectedPeriod !== DateRangeOption.All) {
+      if (dateFrom) {
+        const fTime = new Date(dateFrom).setHours(0, 0, 0, 0);
+        if (!isNaN(fTime) && new Date(dateFrom).getFullYear() > 1900) {
+          createdGte = Math.floor(fTime / 1000);
+        }
+      }
+      if (dateTo) {
+        const tTime = new Date(dateTo).setHours(23, 59, 59, 999);
+        if (!isNaN(tTime) && new Date(dateTo).getFullYear() < 9000) {
+          createdLte = Math.floor(tTime / 1000);
+        }
+      }
+    }
+
+    try {
+      // 1. Fetch Stripe payments
+      const stripeCharges = await fetchStripeCharges(
+        targetAccountId,
+        undefined,
+        createdGte,
+        createdLte,
+      );
+
+      const allStripeRows: PaymentHistoryRow[] = stripeCharges.map((ch) =>
+        mapStripeChargeToPaymentHistoryRow(ch, activeAccountNum || defaultAccountNum),
+      );
+
+      // 2. Account filter
+      const activeSelectedAccounts = (
+        normalizedSelectedAccounts.length > 0
           ? normalizedSelectedAccounts
-          : normalizedSelectedAccounts,
-      from: dateFrom ? dateFrom : undefined,
-      to: dateTo ? dateTo : undefined,
-      dueDateFrom: dueDateFrom ? dueDateFrom : undefined,
-      dueDateTo: dueDateTo ? dueDateTo : undefined,
-      currencyKey: 'All',
-      filters: filters,
-    };
+          : selectAccount.length > 0
+            ? selectAccount
+            : [defaultAccountNum].filter(Boolean)
+      ).map((a) => String(a).replace(/^0+/, ''));
 
-    getPaymentHistory(request)
-      .then(
-        (resp: PaymentInvoice) => {
-          setPaymentHistoryList(resp.paymentList);
-          const responseCurrencyTypes = [
-            ...new Set(
-              (resp.paymentList ?? [])
-                .flatMap((payment) => [
-                  payment.currencyKey,
-                  ...(payment.sdInvoices ?? []).map(
-                    (invoice) => invoice.currencyKey,
-                  ),
-                ])
-                .filter((currency): currency is string => Boolean(currency)),
-            ),
-          ].sort();
-          const effectiveCurrencyTypes =
-            responseCurrencyTypes.length > 0
-              ? responseCurrencyTypes
-              : configuredCurrencies.map((currency) => currency.code);
-          const resolvedCurrency =
-            selectedCurrency &&
-            effectiveCurrencyTypes.includes(selectedCurrency)
-              ? selectedCurrency
-              : (effectiveCurrencyTypes[0] ?? '');
-          if (resolvedCurrency !== selectedCurrency) {
-            setSelectedCurrency(resolvedCurrency);
-          }
-          const currencyFilter = showPaymentHistoryFilter
-            ? resolvedCurrency
-            : '';
+      let filteredStripeRows = allStripeRows.filter((r) => {
+        if (activeSelectedAccounts.length === 0) return true;
+        const rowAcc = (r.soldtoNumber || '').replace(/^0+/, '');
+        const rawRowAcc = String(r.soldtoNumber || '');
+        const metaAcc = String(r.paymentData?.payerNumber || '').replace(/^0+/, '');
 
-          let results = clone(resp.paymentList) ?? [];
-
-          results = filterPaymentsBySelectedAccounts(
-            results,
-            normalizedSelectedAccounts,
-            selectedSoldToAccounts,
-          );
-
-          if (selectedSoldTo) {
-            if (selectedSoldTo.length === 0) {
-              return;
-            }
-            results = results.filter((item) => {
-              const sdInvoices = item.sdInvoices || [];
-              let containsNumber = false;
-
-              sdInvoices.forEach((subInvoice) => {
-                const soldtoNumber = subInvoice.soldtoNumber
-                  ? subInvoice.soldtoNumber.replace(/^0+/, '')
-                  : '';
-                if (selectedSoldTo.includes(soldtoNumber)) {
-                  containsNumber = true;
-                }
-              });
-
-              return containsNumber;
-            });
-          }
-
-          if (invoiceNumber !== '' || currencyFilter) {
-            results = results.filter((invoice) => {
-              const sdInvoices = invoice.sdInvoices || [];
-              let matchesInvoiceNumber = true;
-              let matchesCurrencyType = true;
-
-              sdInvoices.forEach((subInvoice) => {
-                const billingDocumentNumber = subInvoice.billingDocumentNumber
-                  ? subInvoice.billingDocumentNumber.replace(/^0+/, '')
-                  : '';
-                if (invoiceNumber !== '') {
-                  matchesInvoiceNumber =
-                    billingDocumentNumber !== null &&
-                    invoiceNumber === billingDocumentNumber;
-                }
-              });
-
-              if (currencyFilter) {
-                matchesCurrencyType = invoice.currencyKey === currencyFilter;
-              }
-
-              return matchesInvoiceNumber && matchesCurrencyType;
-            });
-          }
-          const filteredData = prepareTableData(results, regionalFormat);
-          setInvoiceList(filteredData);
-        },
-        (error) => {
-          setInvoiceList([]);
-          setPaymentHistoryList([]);
-          showToastMessage('error', error);
-        },
-      )
-      .finally(() => {
-        setIsPreSearch(false);
+        return (
+          activeSelectedAccounts.includes(rowAcc) ||
+          activeSelectedAccounts.includes(rawRowAcc) ||
+          activeSelectedAccounts.includes(metaAcc) ||
+          (selectedAccount?.accountId &&
+            activeSelectedAccounts.includes(selectedAccount.accountId) &&
+            (rowAcc === defaultAccountNum.replace(/^0+/, '') ||
+              metaAcc === defaultAccountNum.replace(/^0+/, '')))
+        );
       });
+
+      // 3. Date filter
+      if (selectedPeriod !== DateRangeOption.All && (dateFrom || dateTo)) {
+        const fromTime =
+          dateFrom && new Date(dateFrom).getFullYear() > 1900
+            ? new Date(dateFrom).setHours(0, 0, 0, 0)
+            : null;
+        const toTime =
+          dateTo && new Date(dateTo).getFullYear() < 9000
+            ? new Date(dateTo).setHours(23, 59, 59, 999)
+            : null;
+
+        filteredStripeRows = filteredStripeRows.filter((r) => {
+          if (!r.documentDate) return true;
+          const rTime = new Date(r.documentDate).getTime();
+          if (isNaN(rTime)) return true;
+          if (fromTime !== null && !isNaN(fromTime) && rTime < fromTime) return false;
+          if (toTime !== null && !isNaN(toTime) && rTime > toTime) return false;
+          return true;
+        });
+      }
+
+      // 4. Invoice filter
+      if (invoiceNumber && invoiceNumber.trim() !== '') {
+        const searchInv = invoiceNumber.trim().replace(/^0+/, '').toLowerCase();
+        filteredStripeRows = filteredStripeRows.filter((r) => {
+          const invNum = (r.billingDocumentNumber || '')
+            .replace(/^0+/, '')
+            .toLowerCase();
+          const desc = (r.paymentData?.itemText || '').toLowerCase();
+          const docNum = (r.documentNumberFinance || '').toLowerCase();
+          const refNum = (r.referenceNumber || '').toLowerCase();
+          return (
+            invNum.includes(searchInv) ||
+            desc.includes(searchInv) ||
+            docNum.includes(searchInv) ||
+            refNum.includes(searchInv)
+          );
+        });
+      }
+
+      // 5. Currency filter if applicable
+      if (selectedCurrency && showPaymentHistoryFilter) {
+        filteredStripeRows = filteredStripeRows.filter(
+          (r) => r.currencyKey === selectedCurrency,
+        );
+      }
+
+      setPaymentHistoryList(filteredStripeRows.map((r) => r.paymentData));
+      setInvoiceList(filteredStripeRows);
+    } catch (err: any) {
+      console.error('Error fetching payments history:', err);
+      setInvoiceList([]);
+      setPaymentHistoryList([]);
+      showToastMessage('error', err?.message || 'Failed to load payments history.');
+    } finally {
+      setIsPreSearch(false);
+    }
   };
 
   const handleExportData = (option: string, data: PaymentHistoryRow[]) => {
@@ -624,6 +913,7 @@ export function usePaymentHistoryData({
     handleMenuItemClick,
     handleExportData,
     invoiceList,
+    onSearch: () => handleChange(),
   });
 
   return {

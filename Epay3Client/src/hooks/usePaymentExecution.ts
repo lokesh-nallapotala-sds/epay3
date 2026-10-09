@@ -251,12 +251,37 @@ export function usePaymentExecution({
     return url.toString();
   };
 
+  const checkIsStripeCard = (card?: PaymentMethod | null) => {
+    return Boolean(
+      card?.token?.startsWith('pm_') ||
+      card?.token?.startsWith('tok_') ||
+      card?.token?.startsWith('btok_') ||
+      card?.token?.startsWith('ba_') ||
+      card?.key?.startsWith('pm_') ||
+      card?.key?.startsWith('tok_') ||
+      card?.key?.startsWith('btok_') ||
+      card?.key?.startsWith('ba_') ||
+      (card as any)?.isSession ||
+      (card as any)?.isStripe
+    );
+  };
+
   const validateCard = () => {
-    if (paymentCard.key === DefaultPaymentMethod.key) {
+    if (paymentCard.key === DefaultPaymentMethod.key || !paymentCard.token) {
       showToastMessage('error', f('payment_methods.select_card'));
       return false;
     }
-    if (isCVVAllowed && paymentCard.cardType !== PaymentTypes.EC) {
+    const isCheck =
+      paymentCard.cardType === PaymentTypes.EC ||
+      paymentCard.cardType === 'EC' ||
+      paymentCard.cardType === 'CHECK' ||
+      paymentCard.cardType === 'eCheck';
+
+    if (isCheck) {
+      return true;
+    }
+
+    if (isCVVAllowed) {
       if (cvv === '') {
         showToastMessage('error', f('payment.error.cvv_empty'));
         return false;
@@ -273,11 +298,7 @@ export function usePaymentExecution({
     shouldPreAuthenticate: boolean,
     isFromAddressValidation = false,
   ): Promise<boolean> => {
-    const isStripeCard = Boolean(
-      paymentCard?.token?.startsWith('pm_') ||
-      paymentCard?.token?.startsWith('tok_') ||
-      paymentCard?.key?.startsWith('pm_')
-    );
+    const isStripeCard = checkIsStripeCard(paymentCard);
     if (!shouldPreAuthenticate || isStripeCard) return true;
 
     const payerAccountDetails: PayerDetails = {
@@ -470,25 +491,51 @@ export function usePaymentExecution({
         .filter(Boolean)
         .join(', ');
 
+      const token = paymentCard.token || paymentCard.key;
+      const cardHolderName = paymentCard.name || selectedAccount?.address?.name || '';
+      const amountToCharge =
+        isPositiveNumber(paymentTotal)
+          ? paymentTotal
+          : isPositiveNumber(payTotal)
+          ? payTotal
+          : (invoices.reduce((sum, inv) => sum + (Number(inv.paymentAmount) || 0), 0) || 1);
+
+      const payload = {
+        amount: amountToCharge,
+        currencyCode: currencyKey || 'USD',
+        cardHolderName,
+        customerName: cardHolderName,
+        token,
+        paymentMethodId: token,
+        accountId: resolvedAccountId,
+        customerId: (selectedAccount as any)?.customerId || '',
+        invoiceNumber: invoiceNumbers,
+        customerEmail: user?.email || '',
+        confirm: true,
+      };
+
       const csrfHeaders = await getCsrfHeaders();
-      const response = await fetch('/api/stripe/payment-intent', {
+      let response = await fetch('/api/stripe/payment', {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           ...csrfHeaders,
         },
-        body: JSON.stringify({
-          amount: paymentTotal,
-          currencyCode: currencyKey || 'USD',
-          paymentMethodId: paymentCard.token || paymentCard.key,
-          accountId: resolvedAccountId,
-          invoiceNumber: invoiceNumbers,
-          customerName: paymentCard.name || selectedAccount?.address?.name || '',
-          customerEmail: user?.email || '',
-          confirm: true,
-        }),
+        body: JSON.stringify(payload),
       });
+
+      if (response.status === 404) {
+        response = await fetch('/api/stripe/payment-intent', {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            ...csrfHeaders,
+          },
+          body: JSON.stringify(payload),
+        });
+      }
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -507,9 +554,16 @@ export function usePaymentExecution({
         const { publishableKey } = await configResp.json();
         const stripe = await getStripe(publishableKey);
         if (stripe) {
-          const confirmResult = await stripe.confirmCardPayment(result.clientSecret);
-          if (confirmResult.error) {
-            throw new Error(confirmResult.error.message || 'Payment authentication failed.');
+          if (paymentCard.cardType === PaymentTypes.EC) {
+            const confirmResult = await (stripe as any).confirmUsBankAccountPayment(result.clientSecret);
+            if (confirmResult.error) {
+              throw new Error(confirmResult.error.message || 'Bank account authentication failed.');
+            }
+          } else {
+            const confirmResult = await stripe.confirmCardPayment(result.clientSecret);
+            if (confirmResult.error) {
+              throw new Error(confirmResult.error.message || 'Payment authentication failed.');
+            }
           }
         }
       }
@@ -552,25 +606,44 @@ export function usePaymentExecution({
         payer ||
         '';
 
+      const token = paymentCard.token || paymentCard.key;
+      const cardHolderName = paymentCard.name || selectedAccount?.address?.name || '';
+      const payload = {
+        amount: payTotal,
+        currencyCode: currencyKey || 'USD',
+        cardHolderName,
+        customerName: cardHolderName,
+        token,
+        paymentMethodId: token,
+        accountId: resolvedAccountId,
+        customerId: (selectedAccount as any)?.customerId || '',
+        description: `Deposit: ${details.referenceNumber || ''}`,
+        customerEmail: user?.email || '',
+        confirm: true,
+      };
+
       const csrfHeaders = await getCsrfHeaders();
-      const response = await fetch('/api/stripe/payment-intent', {
+      let response = await fetch('/api/stripe/payment', {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           ...csrfHeaders,
         },
-        body: JSON.stringify({
-          amount: payTotal,
-          currencyCode: currencyKey || 'USD',
-          paymentMethodId: paymentCard.token || paymentCard.key,
-          accountId: resolvedAccountId,
-          description: `Deposit: ${details.referenceNumber || ''}`,
-          customerName: paymentCard.name || selectedAccount?.address?.name || '',
-          customerEmail: user?.email || '',
-          confirm: true,
-        }),
+        body: JSON.stringify(payload),
       });
+
+      if (response.status === 404) {
+        response = await fetch('/api/stripe/payment-intent', {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            ...csrfHeaders,
+          },
+          body: JSON.stringify(payload),
+        });
+      }
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -652,10 +725,19 @@ export function usePaymentExecution({
         documentDate,
         soldtoNumber,
       } = invoice;
+
+      const fallbackYear = invoice.documentDate
+        ? new Date(invoice.documentDate).getFullYear()
+        : new Date().getFullYear();
+
       return {
         documentNumberFinance,
-        lineItemInTheRelevantInvoice,
-        fiscalYearOfTheRelevantInvoice,
+        lineItemInTheRelevantInvoice:
+          lineItemInTheRelevantInvoice != null ? lineItemInTheRelevantInvoice : 1,
+        fiscalYearOfTheRelevantInvoice:
+          fiscalYearOfTheRelevantInvoice != null
+            ? Number(fiscalYearOfTheRelevantInvoice)
+            : fallbackYear,
         openAmount,
         paymentAmount,
         currencyKey: invoiceCurrencyKey,
@@ -669,11 +751,7 @@ export function usePaymentExecution({
       };
     });
 
-    const isStripeCard = Boolean(
-      paymentCard?.token?.startsWith('pm_') ||
-      paymentCard?.token?.startsWith('tok_') ||
-      paymentCard?.key?.startsWith('pm_')
-    );
+    const isStripeCard = checkIsStripeCard(paymentCard);
 
     if (isStripeCard) {
       executeStripePayment(mappedInvoices);
@@ -806,11 +884,7 @@ export function usePaymentExecution({
       }
     }
 
-    const isStripeCard = Boolean(
-      paymentCard?.token?.startsWith('pm_') ||
-      paymentCard?.token?.startsWith('tok_') ||
-      paymentCard?.key?.startsWith('pm_')
-    );
+    const isStripeCard = checkIsStripeCard(paymentCard);
 
     if (isStripeCard) {
       if (depositDetails) {
@@ -947,9 +1021,10 @@ export function usePaymentExecution({
         return;
       }
 
+      const isStripe = checkIsStripeCard(paymentCard);
       const isCardPaymentMethod =
         paymentCard?.cardType && paymentCard.cardType !== PaymentTypes.EC;
-      if (isCardPaymentMethod && (!configLoaded || !activePaymentProvider)) {
+      if (!isStripe && isCardPaymentMethod && (!configLoaded || !activePaymentProvider)) {
         showToastMessage(
           'error',
           'Payment provider configuration is not available. Please try again.',
@@ -1027,42 +1102,34 @@ export function usePaymentExecution({
       return;
     }
 
-    const isStripeCard = Boolean(
-      paymentCard?.token?.startsWith('pm_') ||
-      paymentCard?.token?.startsWith('tok_') ||
-      paymentCard?.key?.startsWith('pm_')
-    );
-
     dispatch(setPaymentMethodIsComplete(true));
     dispatch(setPaymentMethodIsEditable(true));
-    dispatch(setPaymentMethodIsExpanded(false));
 
-    if (isStripeCard) {
-      dispatch(setAddressValidationIsExpanded(false));
-      dispatch(setAddressValidationIsComplete(true));
-      onSetStartPay(true);
-      return;
-    }
-
-    dispatch(setAddressValidationIsExpanded(true));
+    const isStripe = checkIsStripeCard(paymentCard);
+    const isCheck =
+      paymentCard?.cardType === PaymentTypes.EC ||
+      paymentCard?.cardType === 'EC' ||
+      paymentCard?.cardType === 'CHECK' ||
+      paymentCard?.cardType === 'eCheck';
 
     const validationRequired =
+      !isStripe &&
+      !isCheck &&
       enablePreAuth &&
       paymentMethodIsCreditCard &&
       addressValidationOptions?.toLowerCase() !== ADDRESS_VALIDATION_OFF &&
       !addressValidationIsComplete;
 
     const preAuthenticationRequired = false;
-      // enablePreAuth &&
-      // paymentMethodIsCreditCard &&
-      // addressValidationOptions?.toLowerCase() === ADDRESS_VALIDATION_OFF &&
-      // isCVVValidationEnabled;
 
     if (!validationRequired && !preAuthenticationRequired) {
       onSetStartPay(true);
+    } else {
+      dispatch(setPaymentMethodIsExpanded(false));
+      dispatch(setAddressValidationIsExpanded(true));
     }
 
-    if (!paymentMethodIsCreditCard) {
+    if (!paymentMethodIsCreditCard || isCheck) {
       dispatch(clearAddressValidation('Check'));
     }
 
@@ -1074,22 +1141,11 @@ export function usePaymentExecution({
   };
 
   const handleAddressValidation = async () => {
-    const isStripeCard = Boolean(
-      paymentCard?.token?.startsWith('pm_') ||
-      paymentCard?.token?.startsWith('tok_') ||
-      paymentCard?.key?.startsWith('pm_')
-    );
-    if (isStripeCard) {
-      dispatch(setAddressValidationIsComplete(true));
-      dispatch(setAddressValidationIsExpanded(false));
-      dispatch(setPaymentMethodIsEditable(true));
-      dispatch(setAddressValidationIsEditable(true));
-      onSetStartPay(true);
-      return;
+    const isStripeCard = checkIsStripeCard(paymentCard);
+    if (!isStripeCard) {
+      const isSuccessful = await doPreAuthenticationIfRequired(true, true);
+      if (!isSuccessful) return;
     }
-
-    const isSuccessful = true;//await doPreAuthenticationIfRequired(true, true);
-    if (!isSuccessful) return;
 
     dispatch(setAddressValidationIsComplete(true));
     dispatch(setAddressValidationIsExpanded(false));

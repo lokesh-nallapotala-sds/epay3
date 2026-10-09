@@ -210,7 +210,6 @@ export default function PaymentTotalsSummary({
                 !canMakePayment ||
                 amountToPay <= 0 ||
                 isProcessing ||
-                !startPay ||
                 !paymentConfigLoaded
               }
               onClick={onPay}
@@ -219,8 +218,7 @@ export default function PaymentTotalsSummary({
                 ...(canMakePayment &&
                   amountToPay > 0 &&
                   !isProcessing &&
-                  paymentConfigLoaded &&
-                  startPay && {
+                  paymentConfigLoaded && {
                     border: `1px solid ${theme.palette.buttonBorder.buttonBorderColor}`,
                     '&:hover': {
                       border: `1px solid ${theme.palette.buttonBorder.buttonBorderHoverColor}`,

@@ -31,6 +31,10 @@ public class StripeManager : IStripeManager
     private const string CreatePaymentIntentPath =
         "/services/apexrest/stripe/paymentIntent/";
 
+    /// <summary>POST — Process a Stripe Payment matching Worldpay API structure.</summary>
+    private const string StripePaymentPath =
+        "/services/apexrest/stripePayment/";
+
     /// <summary>GET — Retrieve a Stripe PaymentIntent status by ID.</summary>
     private const string GetPaymentIntentBasePath =
         "/services/apexrest/stripe/paymentIntentStatus/";
@@ -46,6 +50,14 @@ public class StripeManager : IStripeManager
     /// <summary>POST — Attach and sync a Stripe PaymentMethod.</summary>
     private const string CreatePaymentMethodPath =
         "/services/apexrest/stripe/paymentMethod/";
+
+    /// <summary>GET — Retrieve Stripe charges (transaction history).</summary>
+    private const string GetChargesPath =
+        "/services/apexrest/stripe/charges/";
+
+    /// <summary>GET — Resolve Stripe customer and payment methods for account.</summary>
+    private const string GetCustomerCardsPath =
+        "/services/apexrest/stripe/customerCards/";
 
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -142,6 +154,73 @@ public class StripeManager : IStripeManager
 
         _logger.LogInformation(
             "Stripe PaymentIntent created successfully. PaymentIntentId={Id} Status={Status}",
+            result.PaymentIntentId,
+            result.Status);
+
+        return result;
+    }
+
+    /// <inheritdoc />
+    public async Task<StripePaymentIntentResponse> ProcessPaymentAsync(
+        StripePaymentIntentRequest request,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (request.Amount <= 0)
+        {
+            throw new ArgumentException("Payment amount must be greater than zero.", nameof(request));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.CurrencyCode))
+        {
+            request.CurrencyCode = "USD";
+        }
+
+        _logger.LogInformation(
+            "Processing Stripe payment via Salesforce. Amount={Amount} {Currency} CardHolder={Holder}",
+            request.Amount,
+            request.CurrencyCode,
+            request.CardHolderName ?? request.CustomerName ?? "(none)");
+
+        var body = new
+        {
+            cardHolderName   = request.CardHolderName ?? request.CustomerName,
+            customerName     = request.CustomerName ?? request.CardHolderName,
+            token            = request.Token ?? request.PaymentMethodId,
+            paymentMethodId  = request.PaymentMethodId ?? request.Token,
+            cardNumber       = request.CardNumber,
+            expiryMonth      = request.ExpiryMonth,
+            expiryYear       = request.ExpiryYear,
+            cvv              = request.Cvv,
+            amount           = request.Amount,
+            currencyCode     = request.CurrencyCode,
+            customerEmail    = request.CustomerEmail,
+            invoiceNumber    = request.InvoiceNumber,
+            description      = request.Description,
+            accountId        = request.AccountId,
+            customerId       = request.CustomerId,
+            confirm          = request.Confirm
+        };
+
+        StripePaymentIntentResponse? result =
+            await _sfClient.PostAsync<StripePaymentIntentResponse>(
+                StripePaymentPath,
+                body,
+                cancellationToken: ct);
+
+        if (result is null)
+        {
+            _logger.LogError(
+                "Salesforce returned null for Stripe payment processing. Invoice={Invoice}",
+                request.InvoiceNumber);
+
+            throw new InvalidOperationException(
+                "Salesforce returned an empty response when processing the Stripe payment.");
+        }
+
+        _logger.LogInformation(
+            "Stripe payment processed successfully. PaymentIntentId={Id} Status={Status}",
             result.PaymentIntentId,
             result.Status);
 
@@ -344,6 +423,91 @@ public class StripeManager : IStripeManager
             "Stripe payment method processed. Success={Success} SfPmId={SfPmId}",
             result.Success,
             result.SalesforcePaymentMethodId);
+
+        return result;
+    }
+
+
+    /// <inheritdoc />
+    public async Task<StripeChargesResponse> GetChargesAsync(
+        string? customerId = null,
+        string? accountId = null,
+        long? createdGte = null,
+        long? createdLte = null,
+        int limit = 50,
+        CancellationToken ct = default)
+    {
+        _logger.LogInformation(
+            "Retrieving Stripe charges via Salesforce. CustomerId={Cust} AccountId={Account} CreatedGte={Gte} CreatedLte={Lte} Limit={Limit}",
+            customerId ?? "(all)",
+            accountId ?? "(none)",
+            createdGte,
+            createdLte,
+            limit);
+
+        var queryParams = new Dictionary<string, string?>
+        {
+            ["limit"] = Math.Clamp(limit, 1, 100).ToString()
+        };
+
+        if (!string.IsNullOrWhiteSpace(customerId))
+        {
+            queryParams["customerId"] = customerId.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(accountId))
+        {
+            queryParams["accountId"] = accountId.Trim();
+        }
+
+        if (createdGte.HasValue && createdGte.Value > 0)
+        {
+            queryParams["created_gte"] = createdGte.Value.ToString();
+        }
+
+        if (createdLte.HasValue && createdLte.Value > 0)
+        {
+            queryParams["created_lte"] = createdLte.Value.ToString();
+        }
+
+        StripeChargesResponse? result = await _sfClient.GetAsync<StripeChargesResponse>(
+            GetChargesPath,
+            queryParams,
+            cancellationToken: ct);
+
+        return result ?? new StripeChargesResponse { Data = new List<StripeChargeItem>() };
+    }
+
+
+    /// <inheritdoc />
+    public async Task<StripeCustomerCardsResponse> GetCustomerAndPaymentMethodsAsync(
+        string accountId,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(accountId))
+        {
+            throw new ArgumentException("AccountId is required.", nameof(accountId));
+        }
+
+        _logger.LogInformation(
+            "Resolving Stripe customer and payment methods for AccountId={Account}",
+            accountId);
+
+        var queryParams = new Dictionary<string, string?>
+        {
+            ["accountId"] = accountId.Trim()
+        };
+
+        StripeCustomerCardsResponse? result = await _sfClient.GetAsync<StripeCustomerCardsResponse>(
+            GetCustomerCardsPath,
+            queryParams,
+            cancellationToken: ct);
+
+        if (result is null)
+        {
+            throw new InvalidOperationException(
+                $"Salesforce returned null when resolving Stripe customer for account {accountId}.");
+        }
 
         return result;
     }

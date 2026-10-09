@@ -192,9 +192,13 @@ public class SalesforceHttpClient : ISalesforceHttpClient, IDisposable
         else
         {
             var path = resolvedPath.TrimStart('/');
-            if (path.Equals("getInvoicesDetailsAPI", StringComparison.OrdinalIgnoreCase))
+            if (path.Equals("getInvoicesDetailsAPI", StringComparison.OrdinalIgnoreCase) ||
+                path.StartsWith("apu/users/id", StringComparison.OrdinalIgnoreCase))
             {
-                path = "getInvoicesDetailsAPI/";
+                if (!path.EndsWith("/"))
+                {
+                    path += "/";
+                }
             }
             fullUrl = $"{baseInstance}/services/apexrest/{path}";
         }
@@ -434,14 +438,30 @@ public class SalesforceHttpClient : ISalesforceHttpClient, IDisposable
             if (!string.IsNullOrEmpty(errorData))
             {
                 var first = errorData.TrimStart();
-                if (first.Length > 0 && (first[0] == '{' || first[0] == '['))
+                if (first.Length > 0)
                 {
-                    JObject? errorObj = JsonConvert.DeserializeObject<JObject>(errorData);
-                    JToken? statusToken = errorObj?["status"];
-                    if (statusToken != null)
+                    if (first[0] == '{')
                     {
-                        httpData.Status = statusToken.ToObject<SapHttpStatus>();
-                        return httpData;
+                        JObject? errorObj = JsonConvert.DeserializeObject<JObject>(errorData);
+                        JToken? statusToken = errorObj?["status"];
+                        if (statusToken != null)
+                        {
+                            httpData.Status = statusToken.ToObject<SapHttpStatus>();
+                            return httpData;
+                        }
+                    }
+                    else if (first[0] == '[')
+                    {
+                        JArray? errorArray = JsonConvert.DeserializeObject<JArray>(errorData);
+                        JToken? firstError = errorArray != null && errorArray.Count > 0 ? errorArray[0] : null;
+                        if (firstError != null)
+                        {
+                            httpData.Status = new SapHttpStatus
+                            {
+                                Line = firstError["message"]?.ToString() ?? firstError["errorCode"]?.ToString()
+                            };
+                            return httpData;
+                        }
                     }
                 }
             }
@@ -512,8 +532,8 @@ public class SalesforceHttpClient : ISalesforceHttpClient, IDisposable
                 var trimmed = errorData.Trim();
                 if (trimmed.StartsWith("["))
                 {
-                    var errorArray = JsonConvert.DeserializeObject<JArray>(errorData);
-                    var firstError = errorArray?.FirstOrDefault();
+                    JArray? errorArray = JsonConvert.DeserializeObject<JArray>(errorData);
+                    JToken? firstError = errorArray != null && errorArray.Count > 0 ? errorArray[0] : null;
                     if (firstError != null)
                     {
                         httpData.Status = new SapHttpStatus

@@ -35,6 +35,14 @@ public interface IStripeManager
         CancellationToken ct = default);
 
     /// <summary>
+    /// Processes a Stripe payment via Salesforce Apex endpoint (stripePayment),
+    /// mirroring the Worldpay payment API request body structure.
+    /// </summary>
+    Task<StripePaymentIntentResponse> ProcessPaymentAsync(
+        StripePaymentIntentRequest request,
+        CancellationToken ct = default);
+
+    /// <summary>
     /// Retrieves the current status of a Stripe PaymentIntent via Salesforce.
     ///
     /// Salesforce endpoint:
@@ -85,5 +93,30 @@ public interface IStripeManager
     /// </summary>
     Task<StripePaymentMethodResponse> CreatePaymentMethodAsync(
         StripePaymentMethodRequest request,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Retrieves Stripe charges (transaction history), optionally filtered by Stripe Customer ID, Account ID, and date range.
+    ///
+    /// Salesforce endpoint:
+    ///   GET /services/apexrest/stripe/charges/?customerId={customerId}&amp;accountId={accountId}&amp;limit={limit}&amp;created_gte={gte}&amp;created_lte={lte}
+    /// </summary>
+    Task<StripeChargesResponse> GetChargesAsync(
+        string? customerId = null,
+        string? accountId = null,
+        long? createdGte = null,
+        long? createdLte = null,
+        int limit = 50,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Resolves or provisions a Stripe customer for the Salesforce Account ID and returns
+    /// customer details along with saved payment methods.
+    ///
+    /// Salesforce endpoint:
+    ///   GET /services/apexrest/stripe/customerCards/?accountId={accountId}
+    /// </summary>
+    Task<StripeCustomerCardsResponse> GetCustomerAndPaymentMethodsAsync(
+        string accountId,
         CancellationToken ct = default);
 }
